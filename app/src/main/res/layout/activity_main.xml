@@ -3,80 +3,79 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
     <data>
-        <variable
-            name="catAdapter"
-            type="net.harimurti.tv.adapter.CategoryAdapter" />
+        <variable name="catAdapter" type="net.harimurti.tv.adapter.CategoryAdapter" />
     </data>
-    <androidx.core.widget.NestedScrollView
-        android:background="@color/color_dark"
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbars="vertical"
-        android:fadeScrollbars="true"
-        tools:context=".MainActivity"
-        tools:ignore="ContentDescription">
+        android:orientation="horizontal"
+        android:background="@color/color_dark">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+        <LinearLayout
+            android:id="@+id/sidebar"
+            android:layout_width="260dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="#1AFFFFFF">
+
+            <TextClock
+                android:id="@+id/clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="hh:mm"
+                android:textColor="@color/white"
+                android:textSize="32sp"
+                android:textStyle="bold" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_category"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_marginTop="10dp"
                 android:adapter="@{catAdapter}"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/item_category"/>
+        </LinearLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:id="@+id/top_bar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:padding="8dp">
+
+                <ImageButton android:id="@+id/button_search" style="@style/ImageButtonMain" app:srcCompat="@drawable/ic_search"/>
+                <ImageButton android:id="@+id/button_refresh" style="@style/ImageButtonMain" app:srcCompat="@drawable/ic_refresh"/>
+                <ImageButton android:id="@+id/button_settings" style="@style/ImageButtonMain" android:src="@drawable/exo_ic_settings"/>
+                <ImageButton android:id="@+id/button_exit" style="@style/ImageButtonMain" app:srcCompat="@drawable/ic_exit"/>
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_channels"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:padding="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/top_bar" />
 
             <com.facebook.shimmer.ShimmerFrameLayout
                 android:id="@+id/loading"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:shimmer_auto_start="true">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:showDividers="middle">
-
-                    <include layout="@layout/item_category_dummy" />
-                    <include layout="@layout/item_category_dummy" />
-                    <include layout="@layout/item_category_dummy" />
-                    <include layout="@layout/item_category_dummy" />
-
-                </LinearLayout>
-
+                app:shimmer_auto_start="true"
+                android:visibility="gone">
+                <include layout="@layout/item_category_dummy" />
             </com.facebook.shimmer.ShimmerFrameLayout>
 
-            <ImageButton
-                android:id="@+id/button_search"
-                style="@style/ImageButtonMain"
-                app:srcCompat="@drawable/ic_search"
-                app:layout_constraintEnd_toStartOf="@id/button_refresh"
-                app:layout_constraintTop_toTopOf="parent"/>
-
-            <ImageButton
-                android:id="@+id/button_refresh"
-                style="@style/ImageButtonMain"
-                app:srcCompat="@drawable/ic_refresh"
-                app:layout_constraintEnd_toStartOf="@id/button_settings"
-                app:layout_constraintTop_toTopOf="parent"/>
-
-            <ImageButton
-                android:id="@+id/button_settings"
-                style="@style/ImageButtonMain"
-                app:layout_constraintEnd_toStartOf="@id/button_exit"
-                app:layout_constraintTop_toTopOf="parent"
-                android:src="@drawable/exo_ic_settings"/>
-
-            <ImageButton
-                android:id="@+id/button_exit"
-                style="@style/ImageButtonMain"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_exit"/>
-
         </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
 </layout>
