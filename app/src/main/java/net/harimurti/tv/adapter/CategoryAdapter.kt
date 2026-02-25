@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import net.harimurti.tv.BR
@@ -43,37 +42,46 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         val category: Category? = categories?.get(position)
         
-        // Sembunyikan RecyclerView internal karena kita pakai Grid di MainActivity
+        // 1. SEMBUNYIKAN RECYCLERVIEW INTERNAL
+        // Karena kita menggunakan Grid yang ada di MainActivity, rv di dalam item ini harus mati
         viewHolder.itemCatBinding.rvChannels.visibility = android.view.View.GONE
-        
-        // Atur tampilan tombol kategori
-        val params = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            setMargins(10, 5, 10, 5)
-        }
-        viewHolder.itemCatBinding.textCategory.layoutParams = params
-        viewHolder.itemCatBinding.textCategory.setPadding(30, 15, 30, 15)
 
-        // Highlight jika kategori dipilih
-        if (selectedPosition == position) {
-            viewHolder.itemCatBinding.textCategory.setTextColor(Color.WHITE)
-            viewHolder.itemCatBinding.textCategory.setBackgroundColor(Color.DKGRAY) // Pastikan drawable ini ada atau gunakan Color
-        } else {
-            viewHolder.itemCatBinding.textCategory.setTextColor(Color.GRAY)
-            viewHolder.itemCatBinding.textCategory.setBackgroundColor(Color.TRANSPARENT)
+        // 2. SETTING TAMPILAN TEKS KATEGORI
+        viewHolder.itemCatBinding.textCategory.apply {
+            visibility = android.view.View.VISIBLE
+            // Atur Padding agar teks tidak mepet (seperti tombol tab)
+            setPadding(40, 20, 40, 20)
+            
+            // Atur warna dan background berdasarkan status klik
+            if (selectedPosition == position) {
+                setTextColor(Color.WHITE)
+                // Pastikan Anda sudah membuat file bg_button_selected.xml di folder drawable
+                try {
+                    setBackgroundResource(R.drawable.bg_button_selected)
+                } catch (e: Exception) {
+                    // Fallback jika file drawable belum dibuat
+                    setBackgroundColor(Color.parseColor("#E91E63")) 
+                }
+            } else {
+                setTextColor(Color.LTGRAY)
+                setBackgroundColor(Color.TRANSPARENT)
+            }
         }
 
-        // Klik Kategori: Kirim data ke MainActivity
+        // 3. LOGIC KLIK KATEGORI
         viewHolder.itemView.setOnClickListener {
+            if (selectedPosition == position) return@setOnClickListener
+
             val oldPos = selectedPosition
             selectedPosition = viewHolder.adapterPosition
+            
+            // Update UI Tab (agar warna berubah)
             notifyItemChanged(oldPos)
             notifyItemChanged(selectedPosition)
 
+            // Perintahkan MainActivity untuk mengganti Grid Channel
             if (context is MainActivity) {
-                (context as MainActivity).displayChannels(category?.channels ?: arrayListOf())
+                (context as MainActivity).displayChannels(category?.channels)
             }
         }
 
@@ -91,6 +99,7 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     fun insertOrUpdateFavorite() {
         val fav = Playlist.favorites
         if (Preferences().sortFavorite) fav.sort()
+        
         if (categories?.get(0)?.isFavorite() == false) {
             categories.addFavorite(fav.channels)
             notifyItemInserted(0)
