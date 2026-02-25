@@ -1,10 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="text_presents">.: PaijemDev Presents :.</string>
-    <string name="btn_retry">Retry</string>
-    <string name="btn_close">Exit</string>
-    <string name="player_error_message" formatted="false">Code: %s\nMessage: %s</string>
-    <string name="alert_title_playlist_error">Playlist Error</string>
-    <string name="favorite">Favorite</string>
-    <string name="null_playlist">No playlists found. Check settings!</string>
-    </resources>
+    <string name="text_presents">.: PaijemDev Mempersembahkan :.</string>
+    <string name="app_tagline_one">Gratis - OpenSource - Tanpa Iklan</string>
+    <string name="app_tagline_two">Ringan - Simpel - Minimalis</string>
+    <string name="thanks_to">Terimakasih Kepada :</string>
+    <string name="thanks_for_support">iptv-org &amp; supporters 😘</string>
+
+    <string name="btn_retry">Coba Ulang</string>
+    <string name="btn_retry_count">Coba Ulang (%d)</string>
+    <string name="btn_close">Keluar</string>
+    <string name="no_network">Tidak ada koneksi internet!</string>
+    <string name="press_back_twice_exit_app">Tekan lagi untuk keluar!</string>
+    <string name="press_back_twice_exit_player">Tekan lagi untuk keluar pemutar!</string>
+
+    <string name="error_unsupported" formatted="false">Media menyertakan trek %s, tetapi tidak didukung</string>
+    <string name="player_error_message" formatted="false">Kode: %s\nError: %s</string>
+    <string name="device_not_support_drm" formatted="false">Perangkat tidak mendukung DRM %s!</string>
+    <string name="alert_title_playlist_error">Playlist Galat</string>
+    <string name="null_playlist">Playlist tidak ditemukan. Periksa pengaturan!</string>
+    <string name="link_error">Tautan Bermasalah!</string>
+
+    <string name="favorite">Favorit</string>
+    <string name="favorite_channel">Saluran Favorit</string>
+    <string name="removed_from_favorite" formatted="false">%s dihapus dari Favorit</string>
+    <string name="added_into_favorite" formatted="false">%s ditambah ke Favorit</string>
+    <string name="already_in_favorite" formatted="false">%s sudah ada di Favorit</string>
+    <string name="playlist_updated">Playlist diperbaharui!</string>
+
+    <string name="settings">Pengaturan</string>
+    <string name="playlist">Daftar Putar</string>
+    <string name="tab_sources">Sumber</string>
+    <string name="tab_app">Aplikasi</string>
+    <string name="tab_about">Tentang</string>
+    <string name="sort_favorite">Urutkan Favorit</string>
+    <string name="sort_category">Urutkan Kategori</string>
+    <string name="sort_channel">Urutkan Saluran</string>
+
+    <string name="playback_speed">Kecepatan</string>
+    <string name="speed_normal">Normal</string>
+    <string name="screen_size">Ukuran Layar</string>
+    <string name="mode_fit">Pas Layar</string>
+    <string name="mode_fill">Isi Layar</string>
+
+    <string name="status_checking_permission">Mengecek izin…</string>
+    <string name="status_preparing_playlist">Menyiapkan playlist…</string>
+    
+    <string name="message_update" formatted="false">Update v%s (%d) tersedia!</string>
+    <string name="dialog_download">Unduh</string>
+    <string name="dialog_ignore">Abaikan</string>
+    <string name="dialog_retry">Coba Lagi</string>
+    <string name="dialog_cached">Gunakan Cache</string>
+</resources>
