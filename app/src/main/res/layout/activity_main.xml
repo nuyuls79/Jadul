@@ -13,7 +13,6 @@
         android:background="@color/color_dark">
 
         <LinearLayout
-            android:id="@+id/sidebar"
             android:layout_width="260dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
@@ -21,11 +20,10 @@
             android:background="#1AFFFFFF">
 
             <TextClock
-                android:id="@+id/clock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:format12Hour="hh:mm"
-                android:textColor="@color/white"
+                android:textColor="@android:color/white"
                 android:textSize="32sp"
                 android:textStyle="bold" />
 
@@ -35,8 +33,7 @@
                 android:layout_height="match_parent"
                 android:layout_marginTop="10dp"
                 android:adapter="@{catAdapter}"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                tools:listitem="@layout/item_category"/>
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
         </LinearLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -48,11 +45,9 @@
                 android:id="@+id/top_bar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:padding="8dp">
-
                 <ImageButton android:id="@+id/button_search" style="@style/ImageButtonMain" app:srcCompat="@drawable/ic_search"/>
                 <ImageButton android:id="@+id/button_refresh" style="@style/ImageButtonMain" app:srcCompat="@drawable/ic_refresh"/>
                 <ImageButton android:id="@+id/button_settings" style="@style/ImageButtonMain" android:src="@drawable/exo_ic_settings"/>
@@ -63,19 +58,17 @@
                 android:id="@+id/rv_channels"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:padding="8dp"
+                app:layout_constraintTop_toBottomOf="@id/top_bar"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/top_bar" />
+                android:padding="8dp" />
 
             <com.facebook.shimmer.ShimmerFrameLayout
                 android:id="@+id/loading"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:shimmer_auto_start="true"
                 android:visibility="gone">
                 <include layout="@layout/item_category_dummy" />
             </com.facebook.shimmer.ShimmerFrameLayout>
-
         </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 </layout>
