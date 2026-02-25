@@ -59,7 +59,7 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
         // Highlight jika kategori dipilih
         if (selectedPosition == position) {
             viewHolder.itemCatBinding.textCategory.setTextColor(Color.WHITE)
-            viewHolder.itemCatBinding.textCategory.setBackgroundResource(R.drawable.bg_button_selected) // Pastikan drawable ini ada atau gunakan Color
+            viewHolder.itemCatBinding.textCategory.setBackgroundColor(Color.DKGRAY) // Pastikan drawable ini ada atau gunakan Color
         } else {
             viewHolder.itemCatBinding.textCategory.setTextColor(Color.GRAY)
             viewHolder.itemCatBinding.textCategory.setBackgroundColor(Color.TRANSPARENT)
