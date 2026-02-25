@@ -1,11 +1,5 @@
 package net.harimurti.tv
 
-import android.annotation.SuppressLint
-import android.content.*
-import android.content.pm.ActivityInfo
-import android.os.*
-package net.harimurti.tv
-
 import android.content.*
 import android.content.pm.ActivityInfo
 import android.os.Bundle
@@ -50,11 +44,9 @@ open class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // kategori horizontal
         binding.rvCategory.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
-        // grid channel
         binding.rvChannels.layoutManager = GridLayoutManager(this, 4)
 
         binding.buttonSearch.setOnClickListener { openSearch() }
@@ -73,16 +65,13 @@ open class MainActivity : AppCompatActivity() {
 
         adapter = CategoryAdapter(playlist.categories)
 
-        // pasang adapter ke RecyclerView (WAJIB)
         binding.rvCategory.adapter = adapter
         binding.catAdapter = adapter
 
-        // klik kategori → tampilkan channel
         adapter.setOnCategorySelected { category ->
             showChannels(category.channels)
         }
 
-        // tampilkan kategori pertama
         if (playlist.categories.isNotEmpty()) {
             showChannels(playlist.categories[0].channels)
         }
