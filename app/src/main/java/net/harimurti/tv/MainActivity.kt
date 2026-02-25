@@ -4,32 +4,32 @@ import android.annotation.SuppressLint
 import android.content.*
 import android.content.pm.ActivityInfo
 import android.os.*
-import android.view.View
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+package net.harimurti.tv
+
+import android.content.*
+import android.content.pm.ActivityInfo
+import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.snackbar.Snackbar
 import net.harimurti.tv.adapter.CategoryAdapter
 import net.harimurti.tv.adapter.ChannelAdapter
 import net.harimurti.tv.databinding.ActivityMainBinding
 import net.harimurti.tv.dialog.SearchDialog
 import net.harimurti.tv.dialog.SettingDialog
-import net.harimurti.tv.extension.*
-import net.harimurti.tv.extra.*
-import net.harimurti.tv.model.*
+import net.harimurti.tv.model.Channel
+import net.harimurti.tv.model.Playlist
 
 open class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: CategoryAdapter
 
-    private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
-            when(intent.getStringExtra(MAIN_CALLBACK)) {
-                UPDATE_PLAYLIST -> updatePlaylist(false)
+            when (intent.getStringExtra(MAIN_CALLBACK)) {
+                UPDATE_PLAYLIST -> loadPlaylist()
                 INSERT_FAVORITE -> adapter.insertOrUpdateFavorite()
                 REMOVE_FAVORITE -> adapter.removeFavorite()
             }
@@ -58,32 +58,33 @@ open class MainActivity : AppCompatActivity() {
         binding.rvChannels.layoutManager = GridLayoutManager(this, 4)
 
         binding.buttonSearch.setOnClickListener { openSearch() }
-        binding.buttonRefresh.setOnClickListener { updatePlaylist(false) }
+        binding.buttonRefresh.setOnClickListener { loadPlaylist() }
         binding.buttonSettings.setOnClickListener { openSettings() }
         binding.buttonExit.setOnClickListener { finish() }
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
 
-        if (!Playlist.cached.isCategoriesEmpty())
-            setPlaylistToAdapter(Playlist.cached)
-        else
-            showAlertPlaylistError("Playlist kosong")
+        loadPlaylist()
     }
 
-    private fun setPlaylistToAdapter(playlistSet: Playlist) {
+    private fun loadPlaylist() {
+        val playlist = Playlist.cached
 
-        adapter = CategoryAdapter(playlistSet.categories)
+        adapter = CategoryAdapter(playlist.categories)
 
+        // pasang adapter ke RecyclerView (WAJIB)
+        binding.rvCategory.adapter = adapter
+        binding.catAdapter = adapter
+
+        // klik kategori → tampilkan channel
         adapter.setOnCategorySelected { category ->
             showChannels(category.channels)
         }
 
-        binding.catAdapter = adapter
-
         // tampilkan kategori pertama
-        if (playlistSet.categories.isNotEmpty()) {
-            showChannels(playlistSet.categories[0].channels)
+        if (playlist.categories.isNotEmpty()) {
+            showChannels(playlist.categories[0].channels)
         }
     }
 
@@ -92,24 +93,12 @@ open class MainActivity : AppCompatActivity() {
             ChannelAdapter(channels, 0, false)
     }
 
-    private fun updatePlaylist(useCache: Boolean) {
-        setPlaylistToAdapter(Playlist.cached)
-    }
-
-    private fun showAlertPlaylistError(message: String?) {
-        AlertDialog.Builder(this)
-            .setTitle("Error")
-            .setMessage(message)
-            .setPositiveButton("Retry") { _, _ -> updatePlaylist(true) }
-            .show()
-    }
-
-    private fun openSettings(){
-        SettingDialog().show(supportFragmentManager.beginTransaction(),null)
+    private fun openSettings() {
+        SettingDialog().show(supportFragmentManager.beginTransaction(), null)
     }
 
     private fun openSearch() {
-        SearchDialog().show(supportFragmentManager.beginTransaction(),null)
+        SearchDialog().show(supportFragmentManager.beginTransaction(), null)
     }
 
     override fun onDestroy() {
