@@ -50,19 +50,14 @@ open class MainActivity : AppCompatActivity() {
     @SuppressLint("DefaultLocale")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         binding.buttonSearch.setOnClickListener{ openSearch() }
         binding.buttonRefresh.setOnClickListener { updatePlaylist(false) }
         binding.buttonSettings.setOnClickListener{ openSettings() }
         binding.buttonExit.setOnClickListener { finish() }
-
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
-
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
         if (!Playlist.cached.isCategoriesEmpty()) setPlaylistToAdapter(Playlist.cached)
         else updatePlaylist(true)
     }
@@ -79,7 +74,6 @@ open class MainActivity : AppCompatActivity() {
 
     fun displayChannels(channels: ArrayList<Channel>?) {
         val spanCount = if (isTelevision) 6 else 4
-        // Gunakan parameter isFav false secara default, atau sesuaikan jika perlu logic favorite
         binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
         binding.rvChannels.adapter = ChannelAdapter(channels, 0, false)
     }
@@ -88,38 +82,24 @@ open class MainActivity : AppCompatActivity() {
         if(preferences.sortCategory) playlistSet.sortCategories()
         if(preferences.sortChannel) playlistSet.sortChannels()
         playlistSet.trimChannelWithEmptyStreamUrl()
-
-        // Setup Favorites
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (preferences.sortFavorite) fav.sort()
         if (fav?.channels?.isNotEmpty() == true) playlistSet.insertFavorite(fav.channels)
         else playlistSet.removeFavorite()
-
-        // Setup Category Horizontal
         categoryAdapter = CategoryAdapter(playlistSet.categories)
         binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.rvCategory.adapter = categoryAdapter
-
-        // Tampilkan Grid Channel Pertama
         if (playlistSet.categories.isNotEmpty()) {
             displayChannels(playlistSet.categories[0].channels)
         }
-
         Playlist.cached = playlistSet
         helper.writeCache(playlistSet)
         setLoadingPlaylist(false)
-
-        if (preferences.playLastWatched && PlayerActivity.isFirst) {
-            val intent = Intent(this, PlayerActivity::class.java)
-            intent.putExtra(PlayData.VALUE, preferences.watched)
-            this.startActivity(intent)
-        }
     }
 
     private fun updatePlaylist(useCache: Boolean) {
         setLoadingPlaylist(true)
         val playlistSet = Playlist()
-
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
             override fun onError(source: String, error: String) {
                 val snackbar = Snackbar.make(binding.root, "[${error.uppercase()}] $source", Snackbar.LENGTH_INDEFINITE)
@@ -145,9 +125,7 @@ open class MainActivity : AppCompatActivity() {
             setPositiveButton(R.string.dialog_retry) { _,_ -> updatePlaylist(true) }
         }
         val cache = helper.readCache()
-        if (cache != null) {
-            alert.setNegativeButton(R.string.dialog_cached) { _,_ -> setPlaylistToAdapter(cache) }
-        }
+        if (cache != null) alert.setNegativeButton(R.string.dialog_cached) { _,_ -> setPlaylistToAdapter(cache) }
         alert.create().show()
     }
 
