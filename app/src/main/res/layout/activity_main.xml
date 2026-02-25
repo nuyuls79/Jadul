@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
         <variable
@@ -7,26 +8,76 @@
             type="net.harimurti.tv.adapter.CategoryAdapter" />
     </data>
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:background="@color/color_dark"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/color_dark">
 
-        <!-- KATEGORI -->
+        <!-- ===== KATEGORI (HORIZONTAL) ===== -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_category"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="70dp"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            android:clipToPadding="false"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- CHANNEL GRID -->
+        <!-- ===== CHANNEL GRID ===== -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_channels"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintTop_toBottomOf="@id/rv_category"
+            app:layout_constraintBottom_toTopOf="@id/loading"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    </LinearLayout>
+        <!-- ===== SHIMMER LOADING ===== -->
+        <com.facebook.shimmer.ShimmerFrameLayout
+            android:id="@+id/loading"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintTop_toBottomOf="@id/rv_category"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:shimmer_auto_start="true" />
+
+        <!-- ===== TOP BUTTONS (WAJIB ADA) ===== -->
+
+        <ImageButton
+            android:id="@+id/button_search"
+            style="@style/ImageButtonMain"
+            android:contentDescription="Search"
+            app:srcCompat="@drawable/ic_search"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/button_refresh" />
+
+        <ImageButton
+            android:id="@+id/button_refresh"
+            style="@style/ImageButtonMain"
+            android:contentDescription="Refresh"
+            app:srcCompat="@drawable/ic_refresh"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/button_settings" />
+
+        <ImageButton
+            android:id="@+id/button_settings"
+            style="@style/ImageButtonMain"
+            android:contentDescription="Settings"
+            android:src="@drawable/exo_ic_settings"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/button_exit" />
+
+        <ImageButton
+            android:id="@+id/button_exit"
+            style="@style/ImageButtonMain"
+            android:contentDescription="Exit"
+            app:srcCompat="@drawable/ic_exit"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
