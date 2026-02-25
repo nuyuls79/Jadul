@@ -8,26 +8,85 @@
             type="net.harimurti.tv.adapter.CategoryAdapter" />
     </data>
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
         android:background="@color/color_dark">
 
-        <!-- SIDEBAR -->
+        <!-- SIDEBAR CATEGORY -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_category"
             android:layout_width="220dp"
-            android:layout_height="match_parent"
-            android:background="@color/color_primary_dark"
+            android:layout_height="0dp"
+            android:background="@color/color_dark"
             android:adapter="@{catAdapter}"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <!-- GRID CHANNEL -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_channels"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/rv_category"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    </LinearLayout>
+        <!-- SHIMMER LOADING -->
+        <com.facebook.shimmer.ShimmerFrameLayout
+            android:id="@+id/loading"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/rv_category"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:shimmer_auto_start="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <include layout="@layout/item_category_dummy"/>
+                <include layout="@layout/item_category_dummy"/>
+                <include layout="@layout/item_category_dummy"/>
+
+            </LinearLayout>
+
+        </com.facebook.shimmer.ShimmerFrameLayout>
+
+        <!-- TOP BUTTONS -->
+        <ImageButton
+            android:id="@+id/button_search"
+            style="@style/ImageButtonMain"
+            app:srcCompat="@drawable/ic_search"
+            app:layout_constraintEnd_toStartOf="@id/button_refresh"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+        <ImageButton
+            android:id="@+id/button_refresh"
+            style="@style/ImageButtonMain"
+            app:srcCompat="@drawable/ic_refresh"
+            app:layout_constraintEnd_toStartOf="@id/button_settings"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+        <ImageButton
+            android:id="@+id/button_settings"
+            style="@style/ImageButtonMain"
+            app:layout_constraintEnd_toStartOf="@id/button_exit"
+            app:layout_constraintTop_toTopOf="parent"
+            android:src="@drawable/exo_ic_settings"/>
+
+        <ImageButton
+            android:id="@+id/button_exit"
+            style="@style/ImageButtonMain"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_exit"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
