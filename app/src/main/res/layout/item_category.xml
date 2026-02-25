@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
     <data>
         <variable name="catModel" type="net.harimurti.tv.model.Category" />
     </data>
@@ -16,11 +15,10 @@
             android:textStyle="bold"
             android:textAllCaps="true"
             android:textSize="16sp"
-            android:textColor="@color/white"
+            android:textColor="@android:color/white"
             android:focusable="true"
             android:clickable="true"
             android:background="?attr/selectableItemBackground"
-            android:text="@{catModel.name}"
-            tools:text="NAMA KATEGORI" />
+            android:text="@{catModel.name}" />
     </FrameLayout>
 </layout>
