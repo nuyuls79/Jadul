@@ -7,12 +7,10 @@
             name="catAdapter"
             type="net.harimurti.tv.adapter.CategoryAdapter" />
     </data>
-
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/color_dark">
-
         <LinearLayout
             android:id="@+id/layout_buttons"
             android:layout_width="wrap_content"
@@ -22,50 +20,43 @@
             android:elevation="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
-
             <ImageButton
                 android:id="@+id/button_search"
                 style="@style/ImageButtonMain"
                 android:src="@drawable/ic_search" />
-
             <ImageButton
                 android:id="@+id/button_refresh"
                 style="@style/ImageButtonMain"
                 android:src="@drawable/ic_refresh" />
-
             <ImageButton
                 android:id="@+id/button_settings"
                 style="@style/ImageButtonMain"
                 android:src="@drawable/exo_ic_settings" />
-
             <ImageButton
                 android:id="@+id/button_exit"
                 style="@style/ImageButtonMain"
                 android:src="@drawable/ic_exit" />
         </LinearLayout>
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_category"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:adapter="@{catAdapter}"
             android:orientation="horizontal"
-            android:padding="8dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintEnd_toStartOf="@+id/layout_buttons"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:listitem="@layout/item_category" />
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_channels"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:padding="8dp"
+            android:layout_marginTop="8dp"
             android:clipToPadding="false"
+            android:padding="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/rv_category" />
-
         <com.facebook.shimmer.ShimmerFrameLayout
             android:id="@+id/loading"
             android:layout_width="match_parent"
@@ -74,6 +65,5 @@
             app:shimmer_auto_start="true">
             <include layout="@layout/item_category_dummy" />
         </com.facebook.shimmer.ShimmerFrameLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
