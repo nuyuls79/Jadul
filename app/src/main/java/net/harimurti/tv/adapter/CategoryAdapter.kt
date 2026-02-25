@@ -3,24 +3,29 @@ package net.harimurti.tv.adapter
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.databinding.DataBindingUtil
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import net.harimurti.tv.BR
 import net.harimurti.tv.R
 import net.harimurti.tv.databinding.ItemCategoryBinding
+import net.harimurti.tv.extension.*
 import net.harimurti.tv.extra.Preferences
 import net.harimurti.tv.model.Category
 import net.harimurti.tv.model.Playlist
+import kotlin.math.max
 
 class CategoryAdapter(private val categories: ArrayList<Category>?) :
     RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
     lateinit var context: Context
 
-    private var categoryClickListener: ((Category) -> Unit)? = null
+    // callback klik kategori
+    private var listener: ((Category) -> Unit)? = null
 
     fun setOnCategorySelected(listener: (Category) -> Unit) {
-        this.categoryClickListener = listener
+        this.listener = listener
     }
 
     class ViewHolder(val binding: ItemCategoryBinding) :
@@ -46,16 +51,37 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
         val category = categories?.get(position)
-        holder.bind(category)
+        val isFav = category?.isFavorite() == true && position == 0
+
+        holder.binding.chAdapter =
+            ChannelAdapter(category?.channels, position, isFav)
 
         holder.itemView.setOnClickListener {
-            category?.let { categoryClickListener?.invoke(it) }
+            category?.let { listener?.invoke(it) }
         }
+
+        val itemWidthDp = 150f
+        val screenWidthPx = context.resources.displayMetrics.widthPixels
+        val density = context.resources.displayMetrics.density
+        val screenWidthDp = screenWidthPx / density
+        val spanCount = max(2, (screenWidthDp / itemWidthDp).toInt())
+
+        holder.binding.rvChannels.layoutManager =
+            GridLayoutManager(context, spanCount)
+
+        val marginEnd = (200 * density).toInt()
+        val wrapContent = LinearLayout.LayoutParams.WRAP_CONTENT
+        if (position == 0) {
+            holder.binding.textCategory.layoutParams =
+                LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
+                    setMargins(0, 0, marginEnd, 0)
+                }
+        }
+
+        holder.bind(category)
     }
 
-    override fun getItemCount(): Int {
-        return categories?.size ?: 0
-    }
+    override fun getItemCount(): Int = categories?.size ?: 0
 
     fun clear() {
         val size = itemCount
@@ -85,4 +111,4 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
             notifyItemRangeChanged(0, itemCount)
         }
     }
-}
+  }
