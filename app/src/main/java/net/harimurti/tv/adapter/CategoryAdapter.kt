@@ -4,15 +4,12 @@ import android.content.Context
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import net.harimurti.tv.BR
 import net.harimurti.tv.MainActivity
 import net.harimurti.tv.R
 import net.harimurti.tv.databinding.ItemCategoryBinding
 import net.harimurti.tv.model.Category
-import net.harimurti.tv.model.Playlist
 
 class CategoryAdapter(private val categories: ArrayList<Category>?) :
     RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
@@ -20,7 +17,7 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     private lateinit var context: Context
     private var selectedPosition = 0
 
-    class ViewHolder(var binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolder(val binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
@@ -31,16 +28,17 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val cat = categories?.get(position)
-        holder.binding.setVariable(BR.catModel, cat)
+        val item = categories?.get(position)
         
         holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
-            text = cat?.category ?: ""
+            // PERBAIKAN: Gunakan akses yang aman
+            text = item?.category ?: "" 
             setTextColor(if (selectedPosition == position) Color.WHITE else Color.GRAY)
+            // PERBAIKAN: Gunakan warna hex langsung agar tidak butuh file XML tambahan
             setBackgroundColor(if (selectedPosition == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
-            setPadding(20, 10, 20, 10)
+            setPadding(24, 12, 24, 12)
         }
 
         holder.itemView.setOnClickListener {
@@ -48,7 +46,9 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
             selectedPosition = holder.adapterPosition
             notifyItemChanged(oldPos)
             notifyItemChanged(selectedPosition)
-            if (context is MainActivity) (context as MainActivity).displayChannels(cat?.channels)
+            if (context is MainActivity) {
+                (context as MainActivity).displayChannels(item?.channels)
+            }
         }
     }
 
