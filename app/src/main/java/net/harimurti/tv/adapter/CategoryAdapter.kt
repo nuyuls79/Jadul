@@ -11,7 +11,7 @@ import net.harimurti.tv.R
 import net.harimurti.tv.databinding.ItemCategoryBinding
 import net.harimurti.tv.model.Category
 
-class CategoryAdapter(private val listKategori: ArrayList<Category>?) :
+class CategoryAdapter(private val categories: ArrayList<Category>?) :
     RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
     private lateinit var context: Context
@@ -28,25 +28,19 @@ class CategoryAdapter(private val listKategori: ArrayList<Category>?) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        // Ambil data tanpa menggunakan nama variabel yang berisiko bentrok
-        val item = listKategori?.get(position)
+        // Ambil data kategori
+        val dataObj = categories?.get(position)
         
         holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
             
-            // Akses property .category dari model secara paksa/eksplisit
-            text = item?.category ?: "" 
+            // CARA PALING KASAR: Paksa panggil field category sebagai String
+            // Ini untuk menghindari bentrok dengan library Char.category selamanya
+            text = dataObj?.let { it.category } ?: ""
             
-            // Menggunakan warna HEX langsung, tidak memanggil XML bg_button_selected
-            // Ini untuk memastikan tidak ada error 'Unresolved reference' pada resource
-            if (selectedPos == position) {
-                setTextColor(Color.WHITE)
-                setBackgroundColor(Color.parseColor("#E91E63"))
-            } else {
-                setTextColor(Color.GRAY)
-                setBackgroundColor(Color.TRANSPARENT)
-            }
+            setTextColor(if (selectedPos == position) Color.WHITE else Color.GRAY)
+            setBackgroundColor(if (selectedPos == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
             setPadding(24, 12, 24, 12)
         }
 
@@ -55,15 +49,13 @@ class CategoryAdapter(private val listKategori: ArrayList<Category>?) :
             selectedPos = holder.adapterPosition
             notifyItemChanged(old)
             notifyItemChanged(selectedPos)
-            
             if (context is MainActivity) {
-                // Langsung akses field channels dari model item
-                (context as MainActivity).displayChannels(item?.channels)
+                (context as MainActivity).displayChannels(dataObj?.channels)
             }
         }
     }
 
-    override fun getItemCount(): Int = listKategori?.size ?: 0
+    override fun getItemCount(): Int = categories?.size ?: 0
     fun insertOrUpdateFavorite() { notifyDataSetChanged() }
     fun removeFavorite() { notifyDataSetChanged() }
 }
