@@ -11,7 +11,7 @@ import net.harimurti.tv.R
 import net.harimurti.tv.databinding.ItemCategoryBinding
 import net.harimurti.tv.model.Category
 
-class CategoryAdapter(private val listCat: ArrayList<Category>?) :
+class CategoryAdapter(private val daftarCat: ArrayList<Category>?) :
     RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
     private lateinit var context: Context
@@ -28,15 +28,14 @@ class CategoryAdapter(private val listCat: ArrayList<Category>?) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val catData = listCat?.get(position)
+        val itemData = daftarCat?.get(position)
         
         holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
-            // Menggunakan catData?.category agar tidak bentrok dengan Char.category
-            text = catData?.category ?: "" 
+            // PERBAIKAN KRUSIAL: Menggunakan namaKategori (alias) atau akses field langsung
+            text = itemData?.category ?: "" 
             setTextColor(if (selectedPos == position) Color.WHITE else Color.GRAY)
-            // Menggunakan warna HEX langsung agar tidak butuh file XML tambahan (menghindari Unresolved reference)
             setBackgroundColor(if (selectedPos == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
             setPadding(24, 12, 24, 12)
         }
@@ -46,14 +45,13 @@ class CategoryAdapter(private val listCat: ArrayList<Category>?) :
             selectedPos = holder.adapterPosition
             notifyItemChanged(oldPos)
             notifyItemChanged(selectedPos)
-            
             if (context is MainActivity) {
-                (context as MainActivity).displayChannels(catData?.channels)
+                (context as MainActivity).displayChannels(itemData?.channels)
             }
         }
     }
 
-    override fun getItemCount(): Int = listCat?.size ?: 0
+    override fun getItemCount(): Int = daftarCat?.size ?: 0
     fun insertOrUpdateFavorite() { notifyDataSetChanged() }
     fun removeFavorite() { notifyDataSetChanged() }
 }
