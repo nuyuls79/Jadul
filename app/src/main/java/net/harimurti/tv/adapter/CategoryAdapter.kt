@@ -28,16 +28,15 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        // Ambil data kategori
         val dataObj = categories?.get(position)
         
         holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
             
-            // CARA PALING KASAR: Paksa panggil field category sebagai String
-            // Ini untuk menghindari bentrok dengan library Char.category selamanya
-            text = dataObj?.let { it.category } ?: ""
+            // Perbaikan fatal: Ambil nilai string secara eksplisit untuk menghindari Char.category
+            val name = dataObj?.category?.toString() ?: ""
+            text = name
             
             setTextColor(if (selectedPos == position) Color.WHITE else Color.GRAY)
             setBackgroundColor(if (selectedPos == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
