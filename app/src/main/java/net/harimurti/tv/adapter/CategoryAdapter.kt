@@ -11,51 +11,59 @@ import net.harimurti.tv.R
 import net.harimurti.tv.databinding.ItemCategoryBinding
 import net.harimurti.tv.model.Category
 
-class CategoryAdapter(private val listUtama: ArrayList<Category>?) :
+class CategoryAdapter(private val listKategori: ArrayList<Category>?) :
     RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
-    private lateinit var ctx: Context
-    private var posDipilih = 0
+    private lateinit var context: Context
+    private var selectedPos = 0
 
     class ViewHolder(val binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        ctx = parent.context
+        context = parent.context
         val binding: ItemCategoryBinding = DataBindingUtil.inflate(
-            LayoutInflater.from(ctx), R.layout.item_category, parent, false
+            LayoutInflater.from(context), R.layout.item_category, parent, false
         )
         return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        // Menggunakan nama variabel 'dataSatu' agar compiler tidak bentrok dengan keyword 'category'
-        val dataSatu = listUtama?.get(position)
+        // Ambil data tanpa menggunakan nama variabel yang berisiko bentrok
+        val item = listKategori?.get(position)
         
         holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
             
-            // Tetap memanggil field .category dari model, tapi melalui pointer dataSatu
-            text = dataSatu?.category ?: "" 
+            // Akses property .category dari model secara paksa/eksplisit
+            text = item?.category ?: "" 
             
-            setTextColor(if (posDipilih == position) Color.WHITE else Color.GRAY)
-            setBackgroundColor(if (posDipilih == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
+            // Menggunakan warna HEX langsung, tidak memanggil XML bg_button_selected
+            // Ini untuk memastikan tidak ada error 'Unresolved reference' pada resource
+            if (selectedPos == position) {
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.parseColor("#E91E63"))
+            } else {
+                setTextColor(Color.GRAY)
+                setBackgroundColor(Color.TRANSPARENT)
+            }
             setPadding(24, 12, 24, 12)
         }
 
         holder.itemView.setOnClickListener {
-            val posLama = posDipilih
-            posDipilih = holder.adapterPosition
-            notifyItemChanged(posLama)
-            notifyItemChanged(posDipilih)
+            val old = selectedPos
+            selectedPos = holder.adapterPosition
+            notifyItemChanged(old)
+            notifyItemChanged(selectedPos)
             
-            if (ctx is MainActivity) {
-                (ctx as MainActivity).displayChannels(dataSatu?.channels)
+            if (context is MainActivity) {
+                // Langsung akses field channels dari model item
+                (context as MainActivity).displayChannels(item?.channels)
             }
         }
     }
 
-    override fun getItemCount(): Int = listUtama?.size ?: 0
+    override fun getItemCount(): Int = listKategori?.size ?: 0
     fun insertOrUpdateFavorite() { notifyDataSetChanged() }
     fun removeFavorite() { notifyDataSetChanged() }
 }
