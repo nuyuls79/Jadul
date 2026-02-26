@@ -28,15 +28,15 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val dataObj = categories?.get(position)
+        val dataObj = categories?.get(position) ?: return
         
         holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
             
-            // Perbaikan fatal: Ambil nilai string secara eksplisit untuk menghindari Char.category
-            val name = dataObj?.category?.toString() ?: ""
-            text = name
+            // PAKSA AKSES: Menggunakan variabel perantara untuk memutus ambiguitas compiler
+            val labelKategori: Any? = dataObj.category
+            text = labelKategori?.toString() ?: ""
             
             setTextColor(if (selectedPos == position) Color.WHITE else Color.GRAY)
             setBackgroundColor(if (selectedPos == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
@@ -49,7 +49,7 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
             notifyItemChanged(old)
             notifyItemChanged(selectedPos)
             if (context is MainActivity) {
-                (context as MainActivity).displayChannels(dataObj?.channels)
+                (context as MainActivity).displayChannels(dataObj.channels)
             }
         }
     }
