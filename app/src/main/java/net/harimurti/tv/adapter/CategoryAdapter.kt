@@ -28,14 +28,16 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        // Variabel dirubah agar tidak bentrok dengan Char.category (Kotlin internal)
-        val modelCat = categories?.get(position)
+        // MENGGUNAKAN NAMA VARIABEL 'objekKategori' UNTUK MENGHINDARI BENTROK SISTEM
+        val objekKategori = categories?.get(position)
         
         holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
-            // Memanggil property dari model data anda
-            text = modelCat?.category ?: "" 
+            
+            // PAKSA COMPILER MEMBACA PROPERTY DARI MODEL ANDA
+            text = objekKategori?.category ?: "" 
+            
             setTextColor(if (selectedPosition == position) Color.WHITE else Color.GRAY)
             setBackgroundColor(if (selectedPosition == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
             setPadding(24, 12, 24, 12)
@@ -46,8 +48,10 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
             selectedPosition = holder.adapterPosition
             notifyItemChanged(oldPos)
             notifyItemChanged(selectedPosition)
+            
             if (context is MainActivity) {
-                (context as MainActivity).displayChannels(modelCat?.channels)
+                // KIRIM DATA CHANNELS KE MAIN ACTIVITY
+                (context as MainActivity).displayChannels(objekKategori?.channels)
             }
         }
     }
