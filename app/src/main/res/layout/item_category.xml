@@ -29,7 +29,7 @@
             android:textStyle="bold"
             android:textAllCaps="false"
             android:background="@drawable/corner_right_sidebar"
-            tools:text="KNOWLEDGE & DOCUMENTARY"
+            tools:text="KNOWLEDGE &amp; DOCUMENTARY"
             android:text="@{catModel.name}" />
 
     </LinearLayout>
