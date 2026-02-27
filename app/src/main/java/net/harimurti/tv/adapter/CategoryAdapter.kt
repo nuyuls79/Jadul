@@ -30,17 +30,17 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val dataObj = categories?.get(position) ?: return
         
+        // Sembunyikan RecyclerView dulu
         holder.binding.rvChannels.visibility = android.view.View.GONE
+        
+        // Set text category
         holder.binding.textCategory.apply {
             visibility = android.view.View.VISIBLE
+            text = dataObj.name ?: ""  // Gunakan name, bukan category
             
-            // PAKSA AKSES: Menggunakan variabel perantara untuk memutus ambiguitas compiler
-            val labelKategori: Any? = dataObj.category
-            text = labelKategori?.toString() ?: ""
-            
+            // Styling
             setTextColor(if (selectedPos == position) Color.WHITE else Color.GRAY)
             setBackgroundColor(if (selectedPos == position) Color.parseColor("#E91E63") else Color.TRANSPARENT)
-            setPadding(24, 12, 24, 12)
         }
 
         holder.itemView.setOnClickListener {
@@ -55,6 +55,12 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     }
 
     override fun getItemCount(): Int = categories?.size ?: 0
-    fun insertOrUpdateFavorite() { notifyDataSetChanged() }
-    fun removeFavorite() { notifyDataSetChanged() }
+    
+    fun insertOrUpdateFavorite() { 
+        notifyDataSetChanged() 
+    }
+    
+    fun removeFavorite() { 
+        notifyDataSetChanged() 
+    }
 }
