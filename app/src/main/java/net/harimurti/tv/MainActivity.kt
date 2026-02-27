@@ -19,6 +19,8 @@ import net.harimurti.tv.dialog.SettingDialog
 import net.harimurti.tv.extension.*
 import net.harimurti.tv.extra.*
 import net.harimurti.tv.model.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     private var isTelevision = UiMode().isTelevision()
@@ -29,6 +31,8 @@ class MainActivity : AppCompatActivity() {
     private var currentCategoryPosition = 0
     private var currentCategory: Category? = null
     private var isDataLoaded = false
+    private var handler: Handler? = null
+    private var runnable: Runnable? = null
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
@@ -72,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         setupAdapter()
         restoreSavedState(savedInstanceState)
         loadInitialData()
+        startDateTimeUpdater()
         
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
     }
@@ -109,6 +114,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Log.d("MainActivity", "onResume - isDataLoaded: $isDataLoaded")
+        startDateTimeUpdater()
         
         if (!isDataLoaded) {
             if (Playlist.cached.categories.isNullOrEmpty()) {
@@ -120,6 +126,41 @@ class MainActivity : AppCompatActivity() {
                 hideLoadingAndShowContent()
                 setPlaylistToAdapter(Playlist.cached)
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopDateTimeUpdater()
+    }
+
+    private fun startDateTimeUpdater() {
+        handler = Handler(Looper.getMainLooper())
+        runnable = object : Runnable {
+            override fun run() {
+                updateDateTime()
+                handler?.postDelayed(this, 1000)
+            }
+        }
+        handler?.post(runnable!!)
+    }
+
+    private fun stopDateTimeUpdater() {
+        handler?.removeCallbacks(runnable!!)
+        handler = null
+        runnable = null
+    }
+
+    private fun updateDateTime() {
+        try {
+            val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            val now = Date()
+            
+            binding.tvDate.text = dateFormat.format(now)
+            binding.tvTime.text = timeFormat.format(now)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error updating date time: ${e.message}")
         }
     }
 
@@ -136,10 +177,11 @@ class MainActivity : AppCompatActivity() {
         binding.setCatAdapter(categoryAdapter)
         
         // Set layout manager for grid channels
-        val spanCount = if (isTelevision) 8 else 6
-        binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
+        val spanCount = if (isTelevision) 8 else 4
+        val gridLayoutManager = GridLayoutManager(this, spanCount)
+        binding.rvChannels.layoutManager = gridLayoutManager
         
-        Log.d("MainActivity", "Adapter setup complete")
+        Log.d("MainActivity", "Adapter setup complete with spanCount=$spanCount")
     }
 
     private fun showLoading() {
@@ -173,7 +215,9 @@ class MainActivity : AppCompatActivity() {
         currentCategory = category
         
         val channels = category?.channels
-        val spanCount = if (isTelevision) 8 else 6
+        val spanCount = if (isTelevision) 8 else 4
+        
+        // Update span count
         (binding.rvChannels.layoutManager as? GridLayoutManager)?.spanCount = spanCount
         
         val channelAdapter = ChannelAdapter(channels, position, false)
@@ -185,57 +229,64 @@ class MainActivity : AppCompatActivity() {
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
         Log.d("MainActivity", "setPlaylistToAdapter started")
         
-        // Process favorites
-        val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
-        if (fav?.channels?.isNotEmpty() == true) {
-            playlistSet.insertFavorite(fav.channels)
-            Log.d("MainActivity", "Favorites added: ${fav.channels?.size} channels")
-        }
-        
-        val categories = playlistSet.categories ?: arrayListOf()
-        Log.d("MainActivity", "Categories from playlist: ${categories.size}")
-        
-        // Log all category names
-        categories.forEachIndexed { index, category ->
-            Log.d("MainActivity", "  Category[$index]: '${category.name}' with ${category.channels?.size} channels")
-        }
-        
-        if (::categoryAdapter.isInitialized) {
-            Log.d("MainActivity", "Updating existing adapter")
-            categoryAdapter.updateData(categories)
-            
-            if (categories.isNotEmpty()) {
-                // Adjust position if needed
-                if (currentCategoryPosition >= categories.size) {
-                    currentCategoryPosition = 0
-                    Log.d("MainActivity", "Reset position to 0")
-                }
-                
-                categoryAdapter.setSelectedPosition(currentCategoryPosition)
-                
-                val targetPosition = if (currentCategoryPosition < categories.size) 
-                    currentCategoryPosition else 0
-                currentCategory = categories[targetPosition]
-                displayChannels(currentCategory, targetPosition)
-                
-                Log.d("MainActivity", "Selected category: '${currentCategory?.name}' at position $targetPosition")
-            } else {
-                binding.rvChannels.adapter = null
-                Log.w("MainActivity", "No categories to display")
-                Toast.makeText(this, "Tidak ada kategori dari playlist", Toast.LENGTH_SHORT).show()
+        try {
+            // Process favorites
+            val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
+            if (fav?.channels?.isNotEmpty() == true) {
+                playlistSet.insertFavorite(fav.channels)
+                Log.d("MainActivity", "Favorites added: ${fav.channels?.size} channels")
             }
-        } else {
-            Log.e("MainActivity", "Adapter not initialized!")
-            setupAdapter()
-            setPlaylistToAdapter(playlistSet)
-            return
+            
+            val categories = playlistSet.categories ?: arrayListOf()
+            Log.d("MainActivity", "Categories from playlist: ${categories.size}")
+            
+            // Log all category names
+            categories.forEachIndexed { index, category ->
+                Log.d("MainActivity", "  Category[$index]: '${category.name}' with ${category.channels?.size} channels")
+            }
+            
+            if (::categoryAdapter.isInitialized) {
+                Log.d("MainActivity", "Updating existing adapter")
+                categoryAdapter.updateData(categories)
+                
+                if (categories.isNotEmpty()) {
+                    // Adjust position if needed
+                    if (currentCategoryPosition >= categories.size) {
+                        currentCategoryPosition = 0
+                        Log.d("MainActivity", "Reset position to 0")
+                    }
+                    
+                    categoryAdapter.setSelectedPosition(currentCategoryPosition)
+                    
+                    val targetPosition = if (currentCategoryPosition < categories.size) 
+                        currentCategoryPosition else 0
+                    currentCategory = categories[targetPosition]
+                    displayChannels(currentCategory, targetPosition)
+                    
+                    Log.d("MainActivity", "Selected category: '${currentCategory?.name}' at position $targetPosition")
+                } else {
+                    binding.rvChannels.adapter = null
+                    Log.w("MainActivity", "No categories to display")
+                    Toast.makeText(this, "Tidak ada kategori dari playlist", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Log.e("MainActivity", "Adapter not initialized!")
+                setupAdapter()
+                setPlaylistToAdapter(playlistSet)
+                return
+            }
+            
+            Playlist.cached = playlistSet
+            isDataLoaded = true
+            hideLoadingAndShowContent()
+            
+            Log.d("MainActivity", "setPlaylistToAdapter completed")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error in setPlaylistToAdapter: ${e.message}")
+            e.printStackTrace()
+            hideLoadingAndShowContent()
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
-        
-        Playlist.cached = playlistSet
-        isDataLoaded = true
-        hideLoadingAndShowContent()
-        
-        Log.d("MainActivity", "setPlaylistToAdapter completed")
     }
 
     private fun updatePlaylist(useCache: Boolean) {
@@ -247,12 +298,16 @@ class MainActivity : AppCompatActivity() {
             override fun onError(source: String, error: String) {
                 Log.e("MainActivity", "Error loading playlist: $error from source $source")
                 runOnUiThread {
-                    if (!Playlist.cached.categories.isNullOrEmpty()) {
-                        Log.d("MainActivity", "Using cache after error")
-                        setPlaylistToAdapter(Playlist.cached)
-                    } else {
-                        hideLoadingAndShowContent()
-                        Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_LONG).show()
+                    try {
+                        if (!Playlist.cached.categories.isNullOrEmpty()) {
+                            Log.d("MainActivity", "Using cache after error")
+                            setPlaylistToAdapter(Playlist.cached)
+                        } else {
+                            hideLoadingAndShowContent()
+                            Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error in onError: ${e.message}")
                     }
                 }
             }
@@ -267,17 +322,21 @@ class MainActivity : AppCompatActivity() {
             override fun onFinish() { 
                 Log.d("MainActivity", "onFinish: total categories ${playlistSet.categories?.size}")
                 runOnUiThread {
-                    if (playlistSet.categories.isNullOrEmpty()) {
-                        if (!Playlist.cached.categories.isNullOrEmpty()) {
-                            Log.d("MainActivity", "No new data, using cache")
-                            setPlaylistToAdapter(Playlist.cached)
+                    try {
+                        if (playlistSet.categories.isNullOrEmpty()) {
+                            if (!Playlist.cached.categories.isNullOrEmpty()) {
+                                Log.d("MainActivity", "No new data, using cache")
+                                setPlaylistToAdapter(Playlist.cached)
+                            } else {
+                                hideLoadingAndShowContent()
+                                Toast.makeText(this@MainActivity, "Playlist kosong atau format tidak sesuai", Toast.LENGTH_LONG).show()
+                            }
                         } else {
-                            hideLoadingAndShowContent()
-                            Toast.makeText(this@MainActivity, "Playlist kosong atau format tidak sesuai", Toast.LENGTH_LONG).show()
+                            Log.d("MainActivity", "Setting new playlist to adapter")
+                            setPlaylistToAdapter(playlistSet)
                         }
-                    } else {
-                        Log.d("MainActivity", "Setting new playlist to adapter")
-                        setPlaylistToAdapter(playlistSet)
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Error in onFinish: ${e.message}")
                     }
                 }
             }
@@ -294,6 +353,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopDateTimeUpdater()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
     }
 }
