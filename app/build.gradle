@@ -30,7 +30,7 @@ android {
         applicationId "net.harimurti.tv"
         minSdkVersion 19
         //noinspection OldTargetApi
-        targetSdkVersion 29 //downgrade for android 11 to make externalstorage readable
+        targetSdkVersion 29
         versionCode versionPropsCode
         versionName "2.4"
 
@@ -55,7 +55,6 @@ android {
             }
         }
     }
-
 }
 
 dependencies {
@@ -64,8 +63,7 @@ dependencies {
     implementation 'androidx.preference:preference-ktx:1.1.1'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.cardview:cardview:1.0.0'
-    //noinspection GradleDependency
-    implementation 'com.squareup.okhttp3:okhttp:3.12.13' //from 3.13 require sdk 21+
+    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.google.android.exoplayer:exoplayer:2.15.1'
     implementation 'com.google.android.exoplayer:exoplayer-rtsp:2.15.1'
     implementation('com.google.android.exoplayer:extension-rtmp:2.15.1') {
