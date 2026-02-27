@@ -5,15 +5,12 @@ import android.content.*
 import android.content.pm.ActivityInfo
 import android.os.*
 import android.util.Log
-import android.view.KeyEvent
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.snackbar.Snackbar
 import net.harimurti.tv.adapter.CategoryAdapter
 import net.harimurti.tv.adapter.ChannelAdapter
 import net.harimurti.tv.databinding.ActivityMainBinding
@@ -37,17 +34,17 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent) {
             when(intent.getStringExtra(MAIN_CALLBACK)) {
                 UPDATE_PLAYLIST -> {
-                    Log.d("MainActivity", "Broadcast: UPDATE_PLAYLIST received")
+                    Log.d("MainActivity", "Broadcast: UPDATE_PLAYLIST")
                     updatePlaylist(false)
                 }
                 INSERT_FAVORITE -> {
-                    Log.d("MainActivity", "Broadcast: INSERT_FAVORITE received")
+                    Log.d("MainActivity", "Broadcast: INSERT_FAVORITE")
                     if (::categoryAdapter.isInitialized) {
                         categoryAdapter.insertOrUpdateFavorite()
                     }
                 }
                 REMOVE_FAVORITE -> {
-                    Log.d("MainActivity", "Broadcast: REMOVE_FAVORITE received")
+                    Log.d("MainActivity", "Broadcast: REMOVE_FAVORITE")
                     if (::categoryAdapter.isInitialized) {
                         categoryAdapter.removeFavorite()
                     }
@@ -71,33 +68,39 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        binding.buttonSearch.setOnClickListener{ openSearch() }
+        setupClickListeners()
+        setupAdapter()
+        restoreSavedState(savedInstanceState)
+        loadInitialData()
+        
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
+    }
+
+    private fun setupClickListeners() {
+        binding.buttonSearch.setOnClickListener { openSearch() }
         binding.buttonRefresh.setOnClickListener { 
             Log.d("MainActivity", "Refresh button clicked")
             showLoading()
             updatePlaylist(false) 
         }
-        binding.buttonSettings.setOnClickListener{ openSettings() }
+        binding.buttonSettings.setOnClickListener { openSettings() }
         binding.buttonExit.setOnClickListener { finish() }
+    }
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
-        
+    private fun restoreSavedState(savedInstanceState: Bundle?) {
         if (savedInstanceState != null) {
             currentCategoryPosition = savedInstanceState.getInt("current_position", 0)
             Log.d("MainActivity", "Restored position: $currentCategoryPosition")
         }
-        
-        // Setup adapter
-        setupAdapter()
-        
-        // Cek cache
-        Log.d("MainActivity", "Playlist.cached categories: ${Playlist.cached.categories?.size}")
+    }
+
+    private fun loadInitialData() {
         if (!Playlist.cached.isCategoriesEmpty()) {
-            Log.d("MainActivity", "Using cached playlist")
+            Log.d("MainActivity", "Using cached playlist with ${Playlist.cached.categories?.size} categories")
             hideLoadingAndShowContent()
             setPlaylistToAdapter(Playlist.cached)
         } else {
-            Log.d("MainActivity", "No cache, loading playlist")
+            Log.d("MainActivity", "No cache, loading playlist from URL: ${preferences.sources}")
             showLoading()
             updatePlaylist(true)
         }
@@ -113,7 +116,7 @@ class MainActivity : AppCompatActivity() {
                 showLoading()
                 updatePlaylist(true)
             } else {
-                Log.d("MainActivity", "onResume: using cache")
+                Log.d("MainActivity", "onResume: using cache with ${Playlist.cached.categories?.size} categories")
                 hideLoadingAndShowContent()
                 setPlaylistToAdapter(Playlist.cached)
             }
@@ -123,22 +126,23 @@ class MainActivity : AppCompatActivity() {
     private fun setupAdapter() {
         Log.d("MainActivity", "setupAdapter called")
         
-        // Buat adapter dengan data kosong
         categoryAdapter = CategoryAdapter(arrayListOf())
         categoryAdapter.setOnCategoryClickListener { position ->
             Log.d("MainActivity", "Category clicked: $position")
             onCategoryClicked(position)
         }
         
-        // Set ke RecyclerView
         binding.rvCategory.adapter = categoryAdapter
         binding.setCatAdapter(categoryAdapter)
+        
+        // Set layout manager for grid channels
+        val spanCount = if (isTelevision) 8 else 6
+        binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
         
         Log.d("MainActivity", "Adapter setup complete")
     }
 
     private fun showLoading() {
-        Log.d("MainActivity", "showLoading")
         binding.loading.visibility = View.VISIBLE
         binding.loading.startShimmer()
         binding.rvCategory.visibility = View.GONE
@@ -146,7 +150,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun hideLoadingAndShowContent() {
-        Log.d("MainActivity", "hideLoadingAndShowContent")
         binding.loading.stopShimmer()
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
@@ -170,38 +173,39 @@ class MainActivity : AppCompatActivity() {
         currentCategory = category
         
         val channels = category?.channels
-        val spanCount = if (isTelevision) 6 else 4
-        binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
+        val spanCount = if (isTelevision) 8 else 6
+        (binding.rvChannels.layoutManager as? GridLayoutManager)?.spanCount = spanCount
         
         val channelAdapter = ChannelAdapter(channels, position, false)
         binding.rvChannels.adapter = channelAdapter
         
-        Log.d("MainActivity", "Channels displayed: ${channels?.size}")
+        Log.d("MainActivity", "Channels displayed: ${channels?.size} channels with spanCount=$spanCount")
     }
 
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
         Log.d("MainActivity", "setPlaylistToAdapter started")
         
+        // Process favorites
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (fav?.channels?.isNotEmpty() == true) {
             playlistSet.insertFavorite(fav.channels)
-            Log.d("MainActivity", "Favorites added")
+            Log.d("MainActivity", "Favorites added: ${fav.channels?.size} channels")
         }
         
         val categories = playlistSet.categories ?: arrayListOf()
-        Log.d("MainActivity", "Categories count: ${categories.size}")
+        Log.d("MainActivity", "Categories from playlist: ${categories.size}")
         
-        // Log setiap kategori
+        // Log all category names
         categories.forEachIndexed { index, category ->
-            Log.d("MainActivity", "Category[$index]: ${category.name}")
+            Log.d("MainActivity", "  Category[$index]: '${category.name}' with ${category.channels?.size} channels")
         }
         
-        // Update adapter
         if (::categoryAdapter.isInitialized) {
             Log.d("MainActivity", "Updating existing adapter")
             categoryAdapter.updateData(categories)
             
             if (categories.isNotEmpty()) {
+                // Adjust position if needed
                 if (currentCategoryPosition >= categories.size) {
                     currentCategoryPosition = 0
                     Log.d("MainActivity", "Reset position to 0")
@@ -214,14 +218,14 @@ class MainActivity : AppCompatActivity() {
                 currentCategory = categories[targetPosition]
                 displayChannels(currentCategory, targetPosition)
                 
-                Log.d("MainActivity", "Selected category: ${currentCategory?.name} at position $targetPosition")
+                Log.d("MainActivity", "Selected category: '${currentCategory?.name}' at position $targetPosition")
             } else {
                 binding.rvChannels.adapter = null
-                Log.d("MainActivity", "No categories to display")
-                Toast.makeText(this, "Tidak ada kategori", Toast.LENGTH_SHORT).show()
+                Log.w("MainActivity", "No categories to display")
+                Toast.makeText(this, "Tidak ada kategori dari playlist", Toast.LENGTH_SHORT).show()
             }
         } else {
-            Log.d("MainActivity", "Adapter not initialized, calling setupAdapter")
+            Log.e("MainActivity", "Adapter not initialized!")
             setupAdapter()
             setPlaylistToAdapter(playlistSet)
             return
@@ -235,7 +239,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePlaylist(useCache: Boolean) {
-        Log.d("MainActivity", "updatePlaylist called with useCache=$useCache")
+        Log.d("MainActivity", "updatePlaylist called with useCache=$useCache, URL: ${preferences.sources}")
         showLoading()
         
         val playlistSet = Playlist()
@@ -248,7 +252,7 @@ class MainActivity : AppCompatActivity() {
                         setPlaylistToAdapter(Playlist.cached)
                     } else {
                         hideLoadingAndShowContent()
-                        Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -269,7 +273,7 @@ class MainActivity : AppCompatActivity() {
                             setPlaylistToAdapter(Playlist.cached)
                         } else {
                             hideLoadingAndShowContent()
-                            Toast.makeText(this@MainActivity, "Playlist kosong", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Playlist kosong atau format tidak sesuai", Toast.LENGTH_LONG).show()
                         }
                     } else {
                         Log.d("MainActivity", "Setting new playlist to adapter")
