@@ -48,32 +48,32 @@
                 app:srcCompat="@drawable/ic_exit" />
         </LinearLayout>
 
-        <!-- SIDEBAR KATEGORI (VERTICAL) - LEBAR 200DP -->
+        <!-- SIDEBAR KATEGORI - DIGESER KE ATAS (marginTop 0dp) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_category"
             android:layout_width="200dp"
             android:layout_height="0dp"
-            android:layout_marginTop="60dp"
+            android:layout_marginTop="0dp"  <!-- DARI 60dp JADI 0dp -->
             android:layout_marginBottom="8dp"
             android:layout_marginStart="8dp"
             android:orientation="vertical"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_buttons"
+            app:layout_constraintTop_toBottomOf="@id/layout_buttons"  <!-- TETAP DI BAWAH BUTTON -->
             android:adapter="@{catAdapter}"
             android:background="#1E1E1E"
             android:overScrollMode="never"
             android:paddingTop="4dp"
             android:paddingBottom="4dp" />
 
-        <!-- GRID CHANNEL (KANAN) -->
+        <!-- GRID CHANNEL - DIGESER KE ATAS (marginTop 0dp) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_channels"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_marginStart="8dp"
-            android:layout_marginTop="60dp"
+            android:layout_marginTop="0dp"  <!-- DARI 60dp JADI 0dp -->
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp"
             android:clipToPadding="false"
@@ -81,7 +81,9 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/rv_category"
-            app:layout_constraintTop_toBottomOf="@id/layout_buttons" />
+            app:layout_constraintTop_toBottomOf="@id/layout_buttons"  <!-- TETAP DI BAWAH BUTTON -->
+            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+            app:spanCount="4" />
 
         <!-- Loading Shimmer -->
         <com.facebook.shimmer.ShimmerFrameLayout
