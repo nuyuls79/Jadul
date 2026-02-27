@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
-import net.harimurti.tv.MainActivity
 import net.harimurti.tv.R
 import net.harimurti.tv.databinding.ItemCategoryBinding
 import net.harimurti.tv.model.Category
@@ -52,13 +51,8 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
                 notifyItemChanged(oldPos)
                 notifyItemChanged(selectedPos)
                 
-                // Panggil callback jika ada
+                // Panggil callback
                 onCategoryClickListener?.invoke(selectedPos)
-                
-                // Fallback ke method lama jika context adalah MainActivity
-                if (context is MainActivity && onCategoryClickListener == null) {
-                    (context as MainActivity).onCategoryClicked(selectedPos)
-                }
             }
         }
     }
