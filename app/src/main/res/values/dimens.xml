@@ -6,10 +6,19 @@
     <dimen name="btn_channel_height">80dp</dimen>
     <dimen name="btn_channel_padding">8dp</dimen>
     
-    <!-- Sidebar category dimensions -->
-    <dimen name="cat_sidebar_width">180dp</dimen>
-    <dimen name="cat_sidebar_item_padding">14dp</dimen>
-    <dimen name="cat_sidebar_text_size">14sp</dimen>
+    <!-- Sidebar dimensions -->
+    <dimen name="sidebar_width">200dp</dimen>
+    <dimen name="sidebar_item_padding">12dp</dimen>
+    <dimen name="sidebar_text_size">14sp</dimen>
+    
+    <!-- Channel grid dimensions -->
+    <dimen name="channel_grid_padding">12dp</dimen>
+    <dimen name="channel_item_height">100dp</dimen>
+    <dimen name="channel_text_size">13sp</dimen>
+    
+    <!-- Header dimensions -->
+    <dimen name="header_height">48dp</dimen>
+    <dimen name="header_text_size">14sp</dimen>
     
     <!-- Original dimens (keep for compatibility) -->
     <dimen name="cat_layout_padding_top">2dp</dimen>
