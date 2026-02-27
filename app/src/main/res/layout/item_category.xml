@@ -1,37 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout  xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
+    
     <data>
         <variable
             name="catModel"
             type="net.harimurti.tv.model.Category" />
-
         <variable
             name="chAdapter"
             type="net.harimurti.tv.adapter.ChannelAdapter" />
     </data>
+    
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="@dimen/cat_layout_padding_top"
-        android:paddingBottom="@dimen/cat_layout_padding_bottom">
-
+        android:paddingTop="4dp"  // Kurangi padding
+        android:paddingBottom="4dp">  // Kurangi padding
+        
         <TextView
             android:id="@+id/text_category"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:minWidth="@dimen/cat_name_width"
-            android:paddingTop="@dimen/cat_name_padding_top_bottom"
-            android:paddingBottom="@dimen/cat_name_padding_top_bottom"
-            android:paddingStart="@dimen/cat_name_padding_top_bottom"
-            android:paddingEnd="@dimen/cat_name_padding_end"
+            android:minWidth="80dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:textStyle="bold"
             android:textAllCaps="true"
-            android:textSize="@dimen/cat_text_size"
+            android:textSize="14sp"
             android:background="@drawable/corner_right"
             tools:text="CATEGORY_NAME"
             android:text="@{catModel.name}" />
@@ -40,11 +41,12 @@
             android:id="@+id/rv_channels"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="@dimen/cat_layout_padding_bottom"
+            android:paddingTop="4dp"
             android:orientation="horizontal"
-            app:layoutManager="androidx.recyclerview.widget.StaggeredGridLayoutManager"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:spanCount="2"
             tools:listitem="@layout/item_channel"
+            android:visibility="gone"
             android:adapter="@{chAdapter}"/>
 
     </LinearLayout>
