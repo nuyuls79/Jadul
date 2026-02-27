@@ -65,11 +65,41 @@ class MainActivity : AppCompatActivity() {
             currentCategoryPosition = savedInstanceState.getInt("current_position", 0)
         }
         
-        if (!Playlist.cached.isCategoriesEmpty()) setPlaylistToAdapter(Playlist.cached)
-        else updatePlaylist(true)
+        // PERBAIKAN: Setup adapter kosong terlebih dahulu
+        setupEmptyAdapter()
+        
+        // Cek apakah sudah ada cache
+        if (!Playlist.cached.isCategoriesEmpty()) {
+            // Jika sudah ada cache, langsung tampilkan
+            setPlaylistToAdapter(Playlist.cached)
+        } else {
+            // Tampilkan loading, lalu update playlist
+            binding.loading.visibility = View.VISIBLE
+            updatePlaylist(true)
+        }
     }
 
-    // PERBAIKAN: Ubah dari private menjadi internal atau public
+    override fun onResume() {
+        super.onResume()
+        // PERBAIKAN: Cek ulang jika playlist kosong
+        if (Playlist.cached.categories.isNullOrEmpty()) {
+            updatePlaylist(true)
+        } else if (::categoryAdapter.isInitialized && categoryAdapter.itemCount == 0) {
+            // Jika adapter kosong tapi cache ada, refresh adapter
+            setPlaylistToAdapter(Playlist.cached)
+        }
+    }
+
+    // PERBAIKAN: Setup adapter kosong sementara
+    private fun setupEmptyAdapter() {
+        categoryAdapter = CategoryAdapter(arrayListOf())
+        categoryAdapter.setOnCategoryClickListener { position ->
+            onCategoryClicked(position)
+        }
+        binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.rvCategory.adapter = categoryAdapter
+    }
+
     fun onCategoryClicked(position: Int) {
         val category = Playlist.cached.categories?.getOrNull(position)
         if (category != null && currentCategoryPosition != position) {
@@ -95,28 +125,37 @@ class MainActivity : AppCompatActivity() {
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (fav?.channels?.isNotEmpty() == true) playlistSet.insertFavorite(fav.channels)
         
-        // PERBAIKAN: Jangan gunakan anonymous object, buat adapter biasa
-        categoryAdapter = CategoryAdapter(playlistSet.categories)
+        // PERBAIKAN: Pastikan categories tidak null
+        val categories = playlistSet.categories ?: arrayListOf()
         
-        // Set callback dengan lambda
-        categoryAdapter.setOnCategoryClickListener { position ->
-            onCategoryClicked(position)
+        // Update atau buat adapter baru
+        if (::categoryAdapter.isInitialized) {
+            categoryAdapter.updateData(categories)
+        } else {
+            categoryAdapter = CategoryAdapter(categories)
+            categoryAdapter.setOnCategoryClickListener { position ->
+                onCategoryClicked(position)
+            }
+            binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            binding.rvCategory.adapter = categoryAdapter
         }
         
-        // Set selected position
-        if (currentCategoryPosition < playlistSet.categories.size) {
+        // Set selected position jika ada
+        if (categories.isNotEmpty()) {
+            if (currentCategoryPosition >= categories.size) {
+                currentCategoryPosition = 0
+            }
             categoryAdapter.setSelectedPosition(currentCategoryPosition)
-        }
-        
-        binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        binding.rvCategory.adapter = categoryAdapter
-        
-        // Tampilkan kategori yang tersimpan atau pertama
-        if (playlistSet.categories.isNotEmpty()) {
-            val targetPosition = if (currentCategoryPosition < playlistSet.categories.size) 
+            
+            // Tampilkan channel untuk kategori pertama
+            val targetPosition = if (currentCategoryPosition < categories.size) 
                 currentCategoryPosition else 0
-            currentCategory = playlistSet.categories[targetPosition]
+            currentCategory = categories[targetPosition]
             displayChannels(currentCategory, targetPosition)
+        } else {
+            // Jika tidak ada kategori, sembunyikan loading dan tampilkan pesan
+            binding.rvChannels.adapter = null
+            Toast.makeText(this, "Tidak ada kategori", Toast.LENGTH_SHORT).show()
         }
         
         Playlist.cached = playlistSet
@@ -125,10 +164,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun updatePlaylist(useCache: Boolean) {
         binding.loading.visibility = View.VISIBLE
+        
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
-            override fun onError(source: String, error: String) {}
-            override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
+            override fun onError(source: String, error: String) {
+                runOnUiThread {
+                    binding.loading.visibility = View.GONE
+                    Toast.makeText(this@MainActivity, "Error loading playlist: $error", Toast.LENGTH_SHORT).show()
+                }
+            }
+            
+            override fun onResponse(playlist: Playlist?) { 
+                playlist?.let { playlistSet.mergeWith(it) } 
+            }
+            
             override fun onFinish() { 
                 runOnUiThread {
                     setPlaylistToAdapter(playlistSet)
