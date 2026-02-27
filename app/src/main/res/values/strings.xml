@@ -5,7 +5,7 @@
     <string name="telegram_group" translatable="false">https://t.me/paijemdev</string>
     <string name="iptv_playlist" translatable="false">https://bit.ly/KPL203</string>
     <string name="json_release" translatable="false">https://github.com/hariimurti/NontonTV/raw/master/json/release.json</string>
-    <string name="apk_release" translatable="false">https://github.com/hariimurti/NontonTV/releases/download/%s/net.harimurti.tv_%s_b%d.apk</string>
+    <string name="apk_release" translatable="false">https://github.com/hariimurti/NontonTV/releases/download/%1$s/net.harimurti.tv_%2$s_b%3$d.apk</string>
     <string name="gh_contributors" translatable="false">https://api.github.com/repos/hariimurti/NontonTV/contributors</string>
     <string name="main_contributors" translatable="false">harimurti, madbulls</string>
 
@@ -18,7 +18,7 @@
 
     <!-- ==================== Tombol ==================== -->
     <string name="btn_retry">Coba lagi</string>
-    <string name="btn_retry_count">Coba lagi (%d)</string>
+    <string name="btn_retry_count" formatted="false">Coba lagi (%1$d)</string>
     <string name="btn_close">Tutup</string>
     <string name="btn_next_channel">Saluran berikutnya</string>
     <string name="dialog_retry">Coba lagi</string>
@@ -36,9 +36,10 @@
     <string name="player_no_playlist">Terjadi masalah pada playlist</string>
     <string name="player_no_channel">Tidak ada saluran yang dapat diputar</string>
     <string name="player_playdata_error">Tidak dapat memproses data pemutaran</string>
-    <string name="player_error_message">Kode kesalahan : %s\nNama kesalahan : %s\nPesan kesalahan : %s</string>
-    <string name="device_not_support_drm">Perangkat Anda tidak mendukung DRM %s!</string>
-    <string name="error_unsupported">Media memiliki %s trek audio, namun tidak ada yang dapat diputar pada perangkat ini</string>
+    <!-- PERBAIKAN: 3 parameter dengan positional arguments -->
+    <string name="player_error_message" formatted="false">Kode kesalahan : %1$s\nNama kesalahan : %2$s\nPesan kesalahan : %3$s</string>
+    <string name="device_not_support_drm" formatted="false">Perangkat Anda tidak mendukung DRM %1$s!</string>
+    <string name="error_unsupported" formatted="false">Media memiliki %1$s trek audio, namun tidak ada yang dapat diputar pada perangkat ini</string>
 
     <!-- ==================== Keluar ==================== -->
     <string name="press_back_twice_exit_app">Tekan sekali lagi untuk keluar dari aplikasi!</string>
@@ -74,9 +75,9 @@
     <string name="top_category">Sudah di kategori teratas</string>
     <string name="bottom_category">Sudah di kategori terbawah</string>
     <string name="favorite_channel">Saluran favorit</string>
-    <string name="removed_from_favorite">%s dihapus dari favorit</string>
-    <string name="added_into_favorite">%s ditambahkan ke favorit</string>
-    <string name="already_in_favorite">%s sudah ada di favorit</string>
+    <string name="removed_from_favorite" formatted="false">%1$s dihapus dari favorit</string>
+    <string name="added_into_favorite" formatted="false">%1$s ditambahkan ke favorit</string>
+    <string name="already_in_favorite" formatted="false">%1$s sudah ada di favorit</string>
 
     <!-- ==================== Peringatan pertama kali ==================== -->
     <string name="alert_first_time" translatable="false">Jika Anda membeli aplikasi ini, silakan minta refund kepada penjual. Aplikasi ini GRATIS!!!\n\n-- -- -- --\nJika Anda membeli aplikasi ini, silakan minta refund kepada penjual. Aplikasi ini GRATIS!!!</string>
@@ -87,7 +88,8 @@
 
     <!-- ==================== Update ==================== -->
     <string name="alert_new_update">Pembaruan</string>
-    <string name="message_update">Versi\n• Terpasang : v%s (%d)\n• Terbaru : %s (%d)\n\nPerubahan :</string>
+    <!-- PERBAIKAN: 4 parameter (2 string + 2 integer) dengan positional arguments -->
+    <string name="message_update" formatted="false">Versi\n• Terpasang : v%1$s (%2$d)\n• Terbaru : %3$s (%4$d)\n\nPerubahan :</string>
     <string name="message_update_changelog" translatable="false">\n• %s</string>
     <string name="message_update_no_changelog">\n• Pembaruan lainnya</string>
 
