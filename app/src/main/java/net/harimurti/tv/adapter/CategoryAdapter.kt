@@ -16,6 +16,7 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
 
     private lateinit var context: Context
     private var selectedPos = 0
+    private var onCategoryClickListener: ((Int) -> Unit)? = null
 
     class ViewHolder(val binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -51,8 +52,11 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
                 notifyItemChanged(oldPos)
                 notifyItemChanged(selectedPos)
                 
-                // Panggil method di MainActivity
-                if (context is MainActivity) {
+                // Panggil callback jika ada
+                onCategoryClickListener?.invoke(selectedPos)
+                
+                // Fallback ke method lama jika context adalah MainActivity
+                if (context is MainActivity && onCategoryClickListener == null) {
                     (context as MainActivity).onCategoryClicked(selectedPos)
                 }
             }
@@ -60,6 +64,10 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     }
 
     override fun getItemCount(): Int = categories?.size ?: 0
+    
+    fun setOnCategoryClickListener(listener: (Int) -> Unit) {
+        this.onCategoryClickListener = listener
+    }
     
     fun setSelectedPosition(position: Int) {
         if (position != selectedPos && position < itemCount) {
