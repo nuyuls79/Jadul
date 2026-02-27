@@ -6,15 +6,19 @@
     <dimen name="btn_channel_height">80dp</dimen>
     <dimen name="btn_channel_padding">8dp</dimen>
     
-    <!-- VERSION ULTRA RAPAT -->
-    <dimen name="cat_layout_padding_top">1dp</dimen>      <!-- Minimal -->
-    <dimen name="cat_layout_padding_bottom">1dp</dimen>   <!-- Minimal -->
+    <!-- Sidebar category dimensions -->
+    <dimen name="cat_sidebar_width">180dp</dimen>
+    <dimen name="cat_sidebar_item_padding">14dp</dimen>
+    <dimen name="cat_sidebar_text_size">14sp</dimen>
     
-    <dimen name="cat_name_width">100dp</dimen>            <!-- Lebar pas -->
-    <dimen name="cat_name_corner">8dp</dimen>             <!-- Sedikit rounded -->
-    <dimen name="cat_name_padding_top_bottom">1dp</dimen> <!-- Minimal -->
-    <dimen name="cat_name_padding_end">4dp</dimen>        <!-- Minimal -->
-    <dimen name="cat_text_size">11sp</dimen>              <!-- Kecil -->
+    <!-- Original dimens (keep for compatibility) -->
+    <dimen name="cat_layout_padding_top">2dp</dimen>
+    <dimen name="cat_layout_padding_bottom">2dp</dimen>
+    <dimen name="cat_name_width">120dp</dimen>
+    <dimen name="cat_name_corner">10dp</dimen>
+    <dimen name="cat_name_padding_top_bottom">2dp</dimen>
+    <dimen name="cat_name_padding_end">8dp</dimen>
+    <dimen name="cat_text_size">12sp</dimen>
     
     <dimen name="ch_name_corner">20dp</dimen>
     <dimen name="ch_name_padding">5dp</dimen>
