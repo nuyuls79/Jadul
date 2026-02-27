@@ -34,13 +34,17 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
             text = dataObj.name ?: ""
             
             if (selectedPos == position) {
+                // Selected state
                 setTextColor(Color.WHITE)
                 setBackgroundResource(R.drawable.category_sidebar_item)
                 isSelected = true
+                setTypeface(null, android.graphics.Typeface.BOLD)
             } else {
-                setTextColor(Color.LTGRAY)
+                // Normal state
+                setTextColor(Color.parseColor("#CCCCCC"))
                 setBackgroundResource(R.drawable.category_sidebar_item)
                 isSelected = false
+                setTypeface(null, android.graphics.Typeface.NORMAL)
             }
         }
 
@@ -76,6 +80,11 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
         notifyDataSetChanged()
     }
     
-    fun insertOrUpdateFavorite() { notifyDataSetChanged() }
-    fun removeFavorite() { notifyDataSetChanged() }
+    fun insertOrUpdateFavorite() { 
+        notifyDataSetChanged() 
+    }
+    
+    fun removeFavorite() { 
+        notifyDataSetChanged() 
+    }
 }
