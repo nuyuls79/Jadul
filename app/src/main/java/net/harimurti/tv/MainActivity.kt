@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var categoryAdapter: CategoryAdapter
     private var currentCategoryPosition = 0
     private var currentCategory: Category? = null
-    private var isDataLoaded = false  // Flag untuk menandai data sudah dimuat
+    private var isDataLoaded = false
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
@@ -66,18 +66,17 @@ class MainActivity : AppCompatActivity() {
             currentCategoryPosition = savedInstanceState.getInt("current_position", 0)
         }
         
-        // PERBAIKAN: Jangan setup adapter kosong, langsung loading
-        binding.loading.visibility = View.VISIBLE
-        binding.rvCategory.visibility = View.GONE  // Sembunyikan RecyclerView dulu
+        // PERBAIKAN: Setup adapter kosong tapi langsung tampilkan shimmer
+        setupInitialView()
         
         // Cek apakah sudah ada cache
         if (!Playlist.cached.isCategoriesEmpty()) {
             // Jika sudah ada cache, langsung tampilkan
-            binding.loading.visibility = View.GONE
-            binding.rvCategory.visibility = View.VISIBLE
+            hideLoadingAndShowContent()
             setPlaylistToAdapter(Playlist.cached)
         } else {
-            // Update playlist
+            // Tampilkan shimmer loading
+            showLoading()
             updatePlaylist(true)
         }
     }
@@ -85,16 +84,38 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         // PERBAIKAN: Jika data belum dimuat dan cache kosong, muat ulang
-        if (!isDataLoaded && Playlist.cached.categories.isNullOrEmpty()) {
-            binding.loading.visibility = View.VISIBLE
-            binding.rvCategory.visibility = View.GONE
-            updatePlaylist(true)
-        } else if (!isDataLoaded && !Playlist.cached.categories.isNullOrEmpty()) {
-            // Jika cache ada tapi data belum dimuat
-            binding.loading.visibility = View.GONE
-            binding.rvCategory.visibility = View.VISIBLE
-            setPlaylistToAdapter(Playlist.cached)
+        if (!isDataLoaded) {
+            if (Playlist.cached.categories.isNullOrEmpty()) {
+                showLoading()
+                updatePlaylist(true)
+            } else {
+                hideLoadingAndShowContent()
+                setPlaylistToAdapter(Playlist.cached)
+            }
         }
+    }
+
+    private fun setupInitialView() {
+        // Setup adapter kosong
+        categoryAdapter = CategoryAdapter(arrayListOf())
+        categoryAdapter.setOnCategoryClickListener { position ->
+            onCategoryClicked(position)
+        }
+        binding.rvCategory.adapter = categoryAdapter
+    }
+
+    private fun showLoading() {
+        binding.loading.visibility = View.VISIBLE
+        binding.loading.startShimmer()
+        binding.rvCategory.visibility = View.GONE
+        binding.rvChannels.visibility = View.GONE
+    }
+
+    private fun hideLoadingAndShowContent() {
+        binding.loading.stopShimmer()
+        binding.loading.visibility = View.GONE
+        binding.rvCategory.visibility = View.VISIBLE
+        binding.rvChannels.visibility = View.VISIBLE
     }
 
     fun onCategoryClicked(position: Int) {
@@ -125,15 +146,8 @@ class MainActivity : AppCompatActivity() {
         // PERBAIKAN: Pastikan categories tidak null
         val categories = playlistSet.categories ?: arrayListOf()
         
-        // Buat adapter baru dengan data
-        categoryAdapter = CategoryAdapter(categories)
-        categoryAdapter.setOnCategoryClickListener { position ->
-            onCategoryClicked(position)
-        }
-        
-        binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        binding.rvCategory.adapter = categoryAdapter
-        binding.rvCategory.visibility = View.VISIBLE  // Tampilkan RecyclerView
+        // Update adapter dengan data baru
+        categoryAdapter.updateData(categories)
         
         // Set selected position jika ada
         if (categories.isNotEmpty()) {
@@ -148,31 +162,31 @@ class MainActivity : AppCompatActivity() {
             currentCategory = categories[targetPosition]
             displayChannels(currentCategory, targetPosition)
         } else {
-            // Jika tidak ada kategori, sembunyikan loading dan tampilkan pesan
+            // Jika tidak ada kategori
             binding.rvChannels.adapter = null
             Toast.makeText(this, "Tidak ada kategori", Toast.LENGTH_SHORT).show()
         }
         
         Playlist.cached = playlistSet
-        isDataLoaded = true  // Tandai data sudah dimuat
-        binding.loading.visibility = View.GONE
+        isDataLoaded = true
+        
+        // Sembunyikan loading dan tampilkan konten
+        hideLoadingAndShowContent()
     }
 
     private fun updatePlaylist(useCache: Boolean) {
-        binding.loading.visibility = View.VISIBLE
-        binding.rvCategory.visibility = View.GONE  // Sembunyikan RecyclerView
+        showLoading()
         
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
             override fun onError(source: String, error: String) {
                 runOnUiThread {
-                    binding.loading.visibility = View.GONE
-                    binding.rvCategory.visibility = View.VISIBLE
-                    Toast.makeText(this@MainActivity, "Error loading playlist: $error", Toast.LENGTH_SHORT).show()
-                    
                     // Jika error, coba tampilkan cache jika ada
                     if (!Playlist.cached.categories.isNullOrEmpty()) {
                         setPlaylistToAdapter(Playlist.cached)
+                    } else {
+                        hideLoadingAndShowContent()
+                        Toast.makeText(this@MainActivity, "Error loading playlist: $error", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -188,8 +202,7 @@ class MainActivity : AppCompatActivity() {
                         if (!Playlist.cached.categories.isNullOrEmpty()) {
                             setPlaylistToAdapter(Playlist.cached)
                         } else {
-                            binding.loading.visibility = View.GONE
-                            binding.rvCategory.visibility = View.VISIBLE
+                            hideLoadingAndShowContent()
                             Toast.makeText(this@MainActivity, "Playlist kosong", Toast.LENGTH_SHORT).show()
                         }
                     } else {
