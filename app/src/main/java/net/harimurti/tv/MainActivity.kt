@@ -22,7 +22,8 @@ import net.harimurti.tv.extension.*
 import net.harimurti.tv.extra.*
 import net.harimurti.tv.model.*
 
-open class MainActivity : AppCompatActivity() {
+// PERBAIKAN: Hapus 'open' jika tidak perlu di-inherit
+class MainActivity : AppCompatActivity() {
     private var isTelevision = UiMode().isTelevision()
     private val preferences = Preferences()
     private val helper = PlaylistHelper()
@@ -69,8 +70,8 @@ open class MainActivity : AppCompatActivity() {
         else updatePlaylist(true)
     }
 
-    // PERBAIKAN: Method displayChannels dengan parameter category dan position
-    fun displayChannels(category: Category?, position: Int) {
+    // PERBAIKAN: Method ini tidak perlu 'open' atau 'override'
+    private fun displayChannels(category: Category?, position: Int) {
         currentCategoryPosition = position
         currentCategory = category
         
@@ -78,10 +79,21 @@ open class MainActivity : AppCompatActivity() {
         val spanCount = if (isTelevision) 6 else 4
         binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
         
-        // Buat ChannelAdapter dengan catId = position (atau ID kategori yang sesuai)
-        // Parameter: channels, catId, isFav
         val channelAdapter = ChannelAdapter(channels, position, false)
         binding.rvChannels.adapter = channelAdapter
+    }
+
+    // PERBAIKAN: Method untuk menangani klik kategori
+    private fun onCategoryClicked(position: Int) {
+        val category = Playlist.cached.categories?.getOrNull(position)
+        if (category != null && currentCategoryPosition != position) {
+            currentCategoryPosition = position
+            currentCategory = category
+            displayChannels(category, position)
+            
+            // Update visual selected category
+            categoryAdapter.notifyDataSetChanged()
+        }
     }
 
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
@@ -95,8 +107,12 @@ open class MainActivity : AppCompatActivity() {
                 
                 // Set selected position berdasarkan currentCategoryPosition
                 if (currentCategoryPosition == position) {
-                    holder.binding.textCategory.setBackgroundColor(resources.getColor(R.color.colorPrimary))
-                    holder.binding.textCategory.setTextColor(resources.getColor(android.R.color.white))
+                    holder.binding.textCategory.setBackgroundColor(
+                        android.graphics.Color.parseColor("#E91E63")
+                    )
+                    holder.binding.textCategory.setTextColor(
+                        android.graphics.Color.WHITE
+                    )
                 }
             }
         }
@@ -116,19 +132,6 @@ open class MainActivity : AppCompatActivity() {
         binding.loading.visibility = View.GONE
     }
 
-    // PERBAIKAN: Method untuk menangani klik kategori
-    fun onCategoryClicked(position: Int) {
-        val category = Playlist.cached.categories?.getOrNull(position)
-        if (category != null && currentCategoryPosition != position) {
-            currentCategoryPosition = position
-            currentCategory = category
-            displayChannels(category, position)
-            
-            // Update visual selected category
-            categoryAdapter.notifyDataSetChanged()
-        }
-    }
-
     private fun updatePlaylist(useCache: Boolean) {
         binding.loading.visibility = View.VISIBLE
         val playlistSet = Playlist()
@@ -143,8 +146,8 @@ open class MainActivity : AppCompatActivity() {
         }).process(useCache)
     }
 
-    private fun openSettings() = SettingDialog().show(supportFragmentManager.beginTransaction(),null)
-    private fun openSearch() = SearchDialog().show(supportFragmentManager.beginTransaction(),null)
+    private fun openSettings() = SettingDialog().show(supportFragmentManager.beginTransaction(), null)
+    private fun openSearch() = SearchDialog().show(supportFragmentManager.beginTransaction(), null)
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
