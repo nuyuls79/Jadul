@@ -22,7 +22,6 @@ import net.harimurti.tv.extension.*
 import net.harimurti.tv.extra.*
 import net.harimurti.tv.model.*
 
-// PERBAIKAN: Hapus 'open' jika tidak perlu di-inherit
 class MainActivity : AppCompatActivity() {
     private var isTelevision = UiMode().isTelevision()
     private val preferences = Preferences()
@@ -70,7 +69,16 @@ class MainActivity : AppCompatActivity() {
         else updatePlaylist(true)
     }
 
-    // PERBAIKAN: Method ini tidak perlu 'open' atau 'override'
+    // PERBAIKAN: Ubah dari private menjadi internal atau public
+    fun onCategoryClicked(position: Int) {
+        val category = Playlist.cached.categories?.getOrNull(position)
+        if (category != null && currentCategoryPosition != position) {
+            currentCategoryPosition = position
+            currentCategory = category
+            displayChannels(category, position)
+        }
+    }
+
     private fun displayChannels(category: Category?, position: Int) {
         currentCategoryPosition = position
         currentCategory = category
@@ -83,38 +91,21 @@ class MainActivity : AppCompatActivity() {
         binding.rvChannels.adapter = channelAdapter
     }
 
-    // PERBAIKAN: Method untuk menangani klik kategori
-    private fun onCategoryClicked(position: Int) {
-        val category = Playlist.cached.categories?.getOrNull(position)
-        if (category != null && currentCategoryPosition != position) {
-            currentCategoryPosition = position
-            currentCategory = category
-            displayChannels(category, position)
-            
-            // Update visual selected category
-            categoryAdapter.notifyDataSetChanged()
-        }
-    }
-
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (fav?.channels?.isNotEmpty() == true) playlistSet.insertFavorite(fav.channels)
         
-        // Buat CategoryAdapter dengan callback
-        categoryAdapter = object : CategoryAdapter(playlistSet.categories) {
-            override fun onBindViewHolder(holder: CategoryAdapter.ViewHolder, position: Int) {
-                super.onBindViewHolder(holder, position)
-                
-                // Set selected position berdasarkan currentCategoryPosition
-                if (currentCategoryPosition == position) {
-                    holder.binding.textCategory.setBackgroundColor(
-                        android.graphics.Color.parseColor("#E91E63")
-                    )
-                    holder.binding.textCategory.setTextColor(
-                        android.graphics.Color.WHITE
-                    )
-                }
-            }
+        // PERBAIKAN: Jangan gunakan anonymous object, buat adapter biasa
+        categoryAdapter = CategoryAdapter(playlistSet.categories)
+        
+        // Set callback dengan lambda
+        categoryAdapter.setOnCategoryClickListener { position ->
+            onCategoryClicked(position)
+        }
+        
+        // Set selected position
+        if (currentCategoryPosition < playlistSet.categories.size) {
+            categoryAdapter.setSelectedPosition(currentCategoryPosition)
         }
         
         binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
