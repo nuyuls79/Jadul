@@ -5,14 +5,39 @@
     <string name="app_tagline_two">Ringan - Simpel - Minimalis</string>
     <string name="thanks_to">Terimakasih Kepada :</string>
     <string name="thanks_for_support">iptv-org utk playlist dan orang² yg mendukung proyek ini 😘</string>
+    
+    <!-- ==================== Tombol ==================== -->
     <string name="btn_retry">Coba Ulang</string>
-    <string name="btn_retry_count">Coba Ulang (%d)</string>
+    <!-- PERBAIKAN: positional argument untuk integer -->
+    <string name="btn_retry_count" formatted="false">Coba Ulang (%1$d)</string>
     <string name="btn_close">Keluar</string>
+    <string name="btn_next_channel">Saluran Berikutnya</string>
+    <string name="dialog_retry">Coba lagi</string>
+    <string name="dialog_cached">Gunakan cache</string>
+    <string name="dialog_download">Unduh APK</string>
+    <string name="dialog_ignore">Abaikan</string>
+    
+    <!-- ==================== Jaringan & error ==================== -->
     <string name="no_network">Tidak ada koneksi internet!</string>
+    <string name="link_error">Tautan Bermasalah!</string>
+    <string name="playlist_cant_be_parsed">Playlist tidak ada, tidak bisa diuraikan?</string>
+    <string name="player_playback_error">Kesalahan Pemutaran</string>
+    <string name="player_no_playlist">Kita punya masalah dgn playlist</string>
+    <string name="player_no_channel">Tidak ada saluran utk diputar</string>
+    <string name="player_playdata_error">Tidak bisa memprocess data putar</string>
+    <!-- PERBAIKAN: 3 parameter dengan positional arguments -->
+    <string name="player_error_message" formatted="false">Kode : %1$s\nNamaKode : %2$s\nPesan Error : %3$s</string>
+    <!-- PERBAIKAN: 1 parameter dengan positional argument -->
+    <string name="device_not_support_drm" formatted="false">Perangkat anda tidak mendukung DRM %1$s!</string>
+    <!-- PERBAIKAN: 1 parameter dengan positional argument -->
+    <string name="error_unsupported" formatted="false">Media menyertakan trek %1$s, tetapi tidak ada yang dapat diputar oleh perangkat ini</string>
+    
+    <!-- ==================== Keluar ==================== -->
     <string name="press_back_twice_exit_app">Tekan lagi untuk keluar dari aplikasi!</string>
     <string name="press_back_twice_exit_player">Tekan lagi untuk keluar dari pemutar!</string>
+    
+    <!-- ==================== Player ==================== -->
     <string name="track_selection_title">Pilih trek</string>
-    <string name="error_unsupported">Media menyertakan trek %s, tetapi tidak ada yang dapat diputar oleh perangkat ini</string>
     <string name="playback_speed">Kecepatan Pemutaran</string>
     <string name="speed_0_25">0.25</string>
     <string name="speed_0_5">0.5</string>
@@ -28,40 +53,36 @@
     <string name="mode_fixed_height">Tinggi Tetap</string>
     <string name="mode_fill">Isi Layar</string>
     <string name="mode_zoom">Perbesar</string>
+    
+    <!-- ==================== Izin & status ==================== -->
     <string name="must_allow_permissions">Kamu harus mengizinkan semua permintaan izin agar aplikasi ini berfungsi dengan baik!</string>
+    <string name="status_checking_permission">status: mengecek perijinan…</string>
+    <string name="status_checking_new_update">status: mengecek rilisan terbaru…</string>
+    <string name="status_preparing_playlist">status: mempersiapkan playlist…</string>
+    
+    <!-- ==================== Pencarian & saluran ==================== -->
     <string name="search_channel">Cari Saluran</string>
     <string name="name_channel">Nama Saluran</string>
     <string name="top_category">Kategori paling atas</string>
     <string name="bottom_category">Kategori paling bawah</string>
-    <string name="playlist_cant_be_parsed">Playlist tidak ada, tidak bisa diuraikan?</string>
-    <string name="btn_next_channel">Saluran Berikutnya</string>
-    <string name="player_error_message">Kode : %s\nNamaKode : %s\nPesan Error : %s</string>
-    <string name="device_not_support_drm">Perangkat anda tidak mendukung DRM %s!</string>
     <string name="favorite_channel">Saluran Favorit</string>
-    <string name="removed_from_favorite">%s telah dihapus dari Favorit</string>
-    <string name="added_into_favorite">%s telah ditambahkan ke Favorit</string>
-    <string name="already_in_favorite">%s sudah ada dalam Favorite</string>
-    <string name="status_checking_permission">status: mengecek perijinan…</string>
-    <string name="status_checking_new_update">status: mengecek rilisan terbaru…</string>
-    <string name="status_preparing_playlist">status: mempersiapkan playlist…</string>
-
-    <!-- alert playlist error -->
+    <!-- PERBAIKAN: 1 parameter dengan positional argument -->
+    <string name="removed_from_favorite" formatted="false">%1$s telah dihapus dari Favorit</string>
+    <!-- PERBAIKAN: 1 parameter dengan positional argument -->
+    <string name="added_into_favorite" formatted="false">%1$s telah ditambahkan ke Favorit</string>
+    <!-- PERBAIKAN: 1 parameter dengan positional argument -->
+    <string name="already_in_favorite" formatted="false">%1$s sudah ada dalam Favorite</string>
+    
+    <!-- ==================== Playlist ==================== -->
     <string name="playlist_updated">Playlist sudah diperbaharui!</string>
-    <string name="dialog_retry">Coba lagi</string>
-    <string name="dialog_cached">Gunakan cache</string>
-    <string name="player_playback_error">Kesalahan Pemutaran</string>
-    <string name="player_no_playlist">Kita punya masalah dgn playlist</string>
-    <string name="player_no_channel">Tidak ada saluran utk diputar</string>
-    <string name="player_playdata_error">Tidak bisa memprocess data putar</string>
-
-    <!-- alert update -->
+    
+    <!-- ==================== Update ==================== -->
     <string name="alert_new_update">Pembaharuan</string>
-    <string name="dialog_download">Unduh APK</string>
-    <string name="dialog_ignore">Abaikan</string>
-    <string name="message_update">Versi\n• Terpasang : v%s (%d)\n• Terkini : %s (%d)\n\nPerubahan :</string>
+    <!-- PERBAIKAN: 4 parameter (2 string + 2 integer) dengan positional arguments -->
+    <string name="message_update" formatted="false">Versi\n• Terpasang : v%1$s (%2$d)\n• Terkini : %3$s (%4$d)\n\nPerubahan :</string>
     <string name="message_update_no_changelog">\n• lain-lain</string>
-
-    <!-- settings -->
+    
+    <!-- ==================== Pengaturan ==================== -->
     <string name="settings">Pengaturan</string>
     <string name="startup">App Mulai</string>
     <string name="launch_at_boot">Jalankan App saat Boot</string>
@@ -76,12 +97,15 @@
     <string name="tab_about">Tentang</string>
     <string name="tab_sources">Daftar Putar</string>
     <string name="tab_app">Aplikasi</string>
+    
+    <!-- ==================== Sumber playlist ==================== -->
     <string name="input_url">URL Tautan</string>
     <string name="title_select_file_json">Pilih File Json</string>
     <string name="null_playlist">No playlists that can be displayed. Check your settings!</string>
     <string name="checking_url">memeriksa tautan…</string>
-    <string name="link_error">Tautan Bermasalah!</string>
     <string name="link_copied_to_clipboard">Tautan disalin ke papan klip!</string>
     <string name="warning_none_source_active">Tidak ada sumber yang aktif, default akan diaktifkan!</string>
+    
+    <!-- ==================== Informasi & wilayah ==================== -->
     <string name="more_information">Informasi Lain :</string>
 </resources>
