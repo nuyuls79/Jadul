@@ -44,18 +44,18 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
             return
         }
         
-        Log.d("CategoryAdapter", "Binding category: ${dataObj.name}")
+        Log.d("CategoryAdapter", "Binding category: '${dataObj.name}'")
         
-        holder.binding.rvChannels.visibility = android.view.View.GONE
         holder.binding.textCategory.apply {
             text = dataObj.name ?: "No Name"
             
+            // Styling untuk sidebar vertical
             if (selectedPos == position) {
-                setTextColor(Color.WHITE)
                 setBackgroundColor(Color.parseColor("#E91E63"))
+                setTextColor(Color.WHITE)
             } else {
-                setTextColor(Color.GRAY)
-                setBackgroundColor(Color.TRANSPARENT)
+                setBackgroundResource(R.drawable.corner_right_sidebar)
+                setTextColor(Color.LTGRAY)
             }
         }
 
@@ -98,16 +98,14 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
         categories?.clear()
         newCategories?.let { 
             categories?.addAll(it)
-            Log.d("CategoryAdapter", "Added ${it.size} categories")
-            
-            // Log semua kategori
+            Log.d("CategoryAdapter", "Added ${it.size} categories:")
             it.forEachIndexed { index, category ->
-                Log.d("CategoryAdapter", "  [$index] ${category.name}")
+                Log.d("CategoryAdapter", "  [$index] '${category.name}'")
             }
         }
         
         notifyDataSetChanged()
-        Log.d("CategoryAdapter", "notifyDataSetChanged called")
+        Log.d("CategoryAdapter", "notifyDataSetChanged called, new itemCount: ${itemCount}")
     }
     
     fun insertOrUpdateFavorite() { 
