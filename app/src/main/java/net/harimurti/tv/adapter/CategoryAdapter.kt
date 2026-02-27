@@ -72,6 +72,13 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
         }
     }
     
+    // PERBAIKAN: Method untuk update data
+    fun updateData(newCategories: ArrayList<Category>?) {
+        categories?.clear()
+        newCategories?.let { categories?.addAll(it) }
+        notifyDataSetChanged()
+    }
+    
     fun insertOrUpdateFavorite() { 
         notifyDataSetChanged() 
     }
