@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import net.harimurti.tv.BR
 import net.harimurti.tv.MainActivity
 import net.harimurti.tv.PlayerActivity
@@ -40,7 +42,7 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         context = parent.context
         val binding: ItemChannelBinding = DataBindingUtil.inflate(
-            LayoutInflater.from(context),R.layout.item_channel,parent,false)
+            LayoutInflater.from(context), R.layout.item_channel, parent, false)
         return ViewHolder(binding)
     }
 
@@ -50,6 +52,25 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
         viewHolder.itemChBinding.catId = catId
         viewHolder.itemChBinding.chId = position
         viewHolder.itemChBinding.clickListener = this
+
+        // Load logo channel menggunakan logoUrl
+        loadChannelLogo(viewHolder.itemChBinding.ivChannelLogo, channel)
+    }
+
+    private fun loadChannelLogo(imageView: ImageView, channel: Channel?) {
+        val logoUrl = channel?.logoUrl
+        if (!logoUrl.isNullOrEmpty()) {
+            // Jika channel memiliki URL logo
+            Glide.with(context)
+                .load(logoUrl)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .placeholder(R.drawable.ic_default_logo)
+                .error(R.drawable.ic_default_logo)
+                .into(imageView)
+        } else {
+            // Jika tidak ada logo, tampilkan default
+            imageView.setImageResource(R.drawable.ic_default_logo)
+        }
     }
 
     override fun getItemCount(): Int {
@@ -68,7 +89,6 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
             channels?.remove(ch)
             fav.remove(ch)
 
-            // notifyupdate
             if (itemCount != 0) {
                 notifyItemRemoved(chId)
                 notifyItemRangeChanged(0, itemCount)
@@ -81,7 +101,6 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
         else {
             val result = fav.insert(ch)
 
-            // notifyupdate
             if (result) sendBroadcast(true)
 
             val message = if (result) String.format(context.getString(R.string.added_into_favorite), ch.name)
