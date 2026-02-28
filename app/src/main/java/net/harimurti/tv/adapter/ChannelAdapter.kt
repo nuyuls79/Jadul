@@ -5,13 +5,14 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView  // TAMBAHKAN INI
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import net.harimurti.tv.BR
+import net.harimurti.tv.BR  // IMPORT INI PENTING
 import net.harimurti.tv.MainActivity
 import net.harimurti.tv.PlayerActivity
 import net.harimurti.tv.R
@@ -53,14 +54,13 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
         viewHolder.itemChBinding.chId = position
         viewHolder.itemChBinding.clickListener = this
 
-        // Load logo channel menggunakan logoUrl
+        // Load logo channel
         loadChannelLogo(viewHolder.itemChBinding.ivChannelLogo, channel)
     }
 
     private fun loadChannelLogo(imageView: ImageView, channel: Channel?) {
         val logoUrl = channel?.logoUrl
         if (!logoUrl.isNullOrEmpty()) {
-            // Jika channel memiliki URL logo
             Glide.with(context)
                 .load(logoUrl)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -68,7 +68,6 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
                 .error(R.drawable.ic_default_logo)
                 .into(imageView)
         } else {
-            // Jika tidak ada logo, tampilkan default
             imageView.setImageResource(R.drawable.ic_default_logo)
         }
     }
