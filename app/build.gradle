@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
+// apply plugin: 'kotlin-kapt'  // NONAKTIFKAN SEMENTARA
 apply plugin: 'kotlin-parcelize'
 
 android {
@@ -30,7 +30,7 @@ android {
         applicationId "net.harimurti.tv"
         minSdkVersion 19
         //noinspection OldTargetApi
-        targetSdkVersion 29 //downgrade for android 11 to make externalstorage readable
+        targetSdkVersion 29
         versionCode versionPropsCode
         versionName "2.4"
 
@@ -66,7 +66,7 @@ dependencies {
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     
     // Network
-    implementation 'com.squareup.okhttp3:okhttp:3.12.13' //from 3.13 require sdk 21+
+    implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.google.code.gson:gson:2.8.6'
     
     // ExoPlayer
@@ -88,7 +88,7 @@ dependencies {
     implementation 'com.facebook.shimmer:shimmer:0.5.0'
     implementation 'com.h6ah4i.android.widget.verticalseekbar:verticalseekbar:1.0.0'
     
-    // Glide untuk loading logo channel (TAMBAHKAN INI)
+    // Glide untuk loading logo channel
     implementation 'com.github.bumptech.glide:glide:4.12.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.12.0'
     
