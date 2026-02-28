@@ -33,21 +33,23 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
         holder.binding.textCategory.apply {
             text = dataObj.name ?: ""
             
+            // Styling untuk sidebar
             if (selectedPos == position) {
-                // Selected state
                 setTextColor(Color.WHITE)
                 setBackgroundResource(R.drawable.category_sidebar_item)
                 isSelected = true
                 setTypeface(null, android.graphics.Typeface.BOLD)
             } else {
-                // Normal state
-                setTextColor(Color.parseColor("#CCCCCC"))
+                setTextColor(Color.LTGRAY)
                 setBackgroundResource(R.drawable.category_sidebar_item)
                 isSelected = false
                 setTypeface(null, android.graphics.Typeface.NORMAL)
             }
         }
-
+    
+        // AKTIFKAN MARQUEE UNTUK SEMUA ITEM
+        holder.binding.textCategory.isSelected = true
+    
         holder.itemView.setOnClickListener {
             if (selectedPos != holder.adapterPosition) {
                 val oldPos = selectedPos
