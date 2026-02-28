@@ -17,6 +17,8 @@ import net.harimurti.tv.dialog.SettingDialog
 import net.harimurti.tv.extension.*
 import net.harimurti.tv.extra.*
 import net.harimurti.tv.model.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     private var isTelevision = UiMode().isTelevision()
@@ -27,6 +29,12 @@ class MainActivity : AppCompatActivity() {
     private var currentCategoryPosition = 0
     private var currentCategory: Category? = null
     private var isDataLoaded = false
+
+    // Untuk jam real-time
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    private var handler: Handler? = null
+    private var runnable: Runnable? = null
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
@@ -50,25 +58,69 @@ class MainActivity : AppCompatActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
-        binding.buttonSearch.setOnClickListener{ openSearch() }
+
+        // Set judul header (bisa diubah sesuai keinginan)
+        binding.tvHeaderTitle.text = "LIVE TV 1 VIP"
+
+        binding.buttonSearch.setOnClickListener { openSearch() }
         binding.buttonRefresh.setOnClickListener { updatePlaylist(false) }
-        binding.buttonSettings.setOnClickListener{ openSettings() }
+        binding.buttonSettings.setOnClickListener { openSettings() }
         binding.buttonExit.setOnClickListener { finish() }
 
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
-        
+
         if (savedInstanceState != null) {
             currentCategoryPosition = savedInstanceState.getInt("current_position", 0)
         }
-        
+
         setupAdapter()
-        
+        startClock() // Mulai update jam real-time
+
         if (!Playlist.cached.isCategoriesEmpty()) {
             setPlaylistToAdapter(Playlist.cached)
         } else {
             updatePlaylist(true)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startClock()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopClock()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopClock()
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
+    }
+
+    private fun startClock() {
+        handler = Handler(Looper.getMainLooper())
+        runnable = object : Runnable {
+            override fun run() {
+                updateTime()
+                handler?.postDelayed(this, 1000) // update setiap detik
+            }
+        }
+        handler?.post(runnable!!)
+    }
+
+    private fun stopClock() {
+        handler?.removeCallbacks(runnable!!)
+        handler = null
+        runnable = null
+    }
+
+    private fun updateTime() {
+        val now = Date()
+        val timeStr = timeFormat.format(now)
+        val dateStr = dateFormat.format(now)
+        binding.tvHeaderTime.text = "$timeStr WIB $dateStr"
     }
 
     private fun setupAdapter() {
@@ -92,11 +144,11 @@ class MainActivity : AppCompatActivity() {
     private fun displayChannels(category: Category?, position: Int) {
         currentCategoryPosition = position
         currentCategory = category
-        
+
         val channels = category?.channels
         val spanCount = if (isTelevision) 8 else 4
         binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
-        
+
         val channelAdapter = ChannelAdapter(channels, position, false)
         binding.rvChannels.adapter = channelAdapter
     }
@@ -104,26 +156,26 @@ class MainActivity : AppCompatActivity() {
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (fav?.channels?.isNotEmpty() == true) playlistSet.insertFavorite(fav.channels)
-        
+
         val categories = playlistSet.categories ?: arrayListOf()
-        
+
         categoryAdapter.updateData(categories)
-        
+
         if (categories.isNotEmpty()) {
             if (currentCategoryPosition >= categories.size) {
                 currentCategoryPosition = 0
             }
             categoryAdapter.setSelectedPosition(currentCategoryPosition)
-            
-            val targetPosition = if (currentCategoryPosition < categories.size) 
+
+            val targetPosition = if (currentCategoryPosition < categories.size)
                 currentCategoryPosition else 0
             currentCategory = categories[targetPosition]
             displayChannels(currentCategory, targetPosition)
         }
-        
+
         Playlist.cached = playlistSet
         isDataLoaded = true
-        
+
         // Sembunyikan loading dan tampilkan konten
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
@@ -135,12 +187,12 @@ class MainActivity : AppCompatActivity() {
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
-        
+
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
             override fun onError(source: String, error: String) {}
             override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
-            override fun onFinish() { 
+            override fun onFinish() {
                 runOnUiThread {
                     setPlaylistToAdapter(playlistSet)
                 }
@@ -154,10 +206,5 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt("current_position", currentCategoryPosition)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
     }
 }
