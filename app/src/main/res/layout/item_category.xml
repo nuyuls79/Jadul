@@ -24,8 +24,13 @@
             android:paddingBottom="12dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:ellipsize="end"
-            android:maxLines="1"
+            android:maxLines="1"                         <!-- Satu baris -->
+            android:singleLine="true"
+            android:ellipsize="marquee"                  <!-- Efek berjalan -->
+            android:marqueeRepeatLimit="marquee_forever"
+            android:scrollHorizontally="true"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
             android:textSize="14sp"
             android:textStyle="normal"
             android:textAllCaps="false"
