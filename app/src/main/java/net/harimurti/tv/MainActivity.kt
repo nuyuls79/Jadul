@@ -1,10 +1,8 @@
 package net.harimurti.tv
 
-import android.annotation.SuppressLint
 import android.content.*
 import android.content.pm.ActivityInfo
 import android.os.*
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -125,11 +123,18 @@ class MainActivity : AppCompatActivity() {
         
         Playlist.cached = playlistSet
         isDataLoaded = true
+        
+        // Sembunyikan loading dan tampilkan konten
         binding.loading.visibility = View.GONE
+        binding.rvCategory.visibility = View.VISIBLE
+        binding.rvChannels.visibility = View.VISIBLE
     }
 
     private fun updatePlaylist(useCache: Boolean) {
+        // Tampilkan loading dan sembunyikan konten
         binding.loading.visibility = View.VISIBLE
+        binding.rvCategory.visibility = View.GONE
+        binding.rvChannels.visibility = View.GONE
         
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
