@@ -34,23 +34,24 @@
             android:gravity="center"
             android:padding="8dp">
 
-            <!-- Logo channel (tidak dapat diklik) -->
+            <!-- Logo dengan jarak bawah -->
             <ImageView
                 android:id="@+id/iv_channel_logo"
                 android:layout_width="56dp"
                 android:layout_height="56dp"
+                android:layout_marginBottom="8dp"  <!-- Jarak antara logo dan nama -->
                 android:scaleType="fitCenter"
                 android:adjustViewBounds="true"
                 android:padding="4dp"
                 android:importantForAccessibility="no"
                 tools:src="@drawable/ic_default_logo" />
 
-            <!-- Nama channel (hanya ini yang dapat diklik untuk play) -->
+            <!-- Nama channel dengan background berbeda -->
             <TextView
                 android:id="@+id/tv_channel_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:padding="8dp"
                 android:text="@{modelChannel.name}"
                 android:textColor="#FFFFFF"
                 android:textSize="12sp"
@@ -58,6 +59,7 @@
                 android:maxLines="2"
                 android:ellipsize="end"
                 android:gravity="center"
+                android:background="@drawable/bg_channel_name"
                 android:clickable="true"
                 android:focusable="true"
                 android:onClick="@{() -> clickListener.onClicked(modelChannel, catId, chId)}"
