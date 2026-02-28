@@ -48,14 +48,18 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
     }
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
-        val channel: Channel? = channels?.get(position)
-        viewHolder.bind(channel)
-        viewHolder.itemChBinding.catId = catId
-        viewHolder.itemChBinding.chId = position
-        viewHolder.itemChBinding.clickListener = this
+    val channel: Channel? = channels?.get(position)
+    viewHolder.bind(channel)
+    viewHolder.itemChBinding.catId = catId
+    viewHolder.itemChBinding.chId = position
+    viewHolder.itemChBinding.clickListener = this
 
-        // Load logo ke ImageView
-        loadChannelLogo(viewHolder.itemChBinding.ivChannelLogo, channel)
+    // Load logo ke ImageView
+    loadChannelLogo(viewHolder.itemChBinding.ivChannelLogo, channel)
+
+    // Aktifkan marquee untuk nama channel
+    viewHolder.itemChBinding.tvChannelName.isSelected = true
+    
     }
 
     private fun loadChannelLogo(imageView: ImageView, channel: Channel?) {
