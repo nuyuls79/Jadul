@@ -5,7 +5,7 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button  // Tambahkan import Button
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -38,11 +38,6 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
             itemChBinding.setVariable(BR.modelChannel, obj)
             itemChBinding.executePendingBindings()
         }
-        
-        // Helper untuk mengakses button
-        fun getPlayButton(): Button {
-            return itemChBinding.btnPlay
-        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -59,32 +54,21 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
         viewHolder.itemChBinding.chId = position
         viewHolder.itemChBinding.clickListener = this
 
-        // Load logo ke background button jika ada logoUrl
-        loadChannelLogoToButton(viewHolder.getPlayButton(), channel)
+        // Load logo ke ImageView
+        loadChannelLogo(viewHolder.itemChBinding.ivChannelLogo, channel)
     }
 
-    private fun loadChannelLogoToButton(button: Button, channel: Channel?) {
+    private fun loadChannelLogo(imageView: ImageView, channel: Channel?) {
         val logoUrl = channel?.logoUrl
         if (!logoUrl.isNullOrEmpty()) {
-            // Jika ada logo, load dengan Glide
             Glide.with(context)
                 .load(logoUrl)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .placeholder(R.drawable.ic_default_logo)
                 .error(R.drawable.ic_default_logo)
-                .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
-                    override fun onResourceReady(resource: android.graphics.drawable.Drawable, transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?) {
-                        // Set sebagai background atau compound drawable
-                        button.setCompoundDrawablesWithIntrinsicBounds(null, resource, null, null)
-                    }
-
-                    override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                        button.setCompoundDrawablesWithIntrinsicBounds(null, placeholder, null, null)
-                    }
-                })
+                .into(imageView)
         } else {
-            // Jika tidak ada logo, set default
-            button.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_default_logo, 0, 0)
+            imageView.setImageResource(R.drawable.ic_default_logo)
         }
     }
 
