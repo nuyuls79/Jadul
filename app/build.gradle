@@ -71,7 +71,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.google.code.gson:gson:2.8.6'
     
-    // EXOPLAYER 2.18.0 - UBAH SEMUA VERSI 2.15.1 MENJADI 2.18.0
+    // EXOPLAYER 2.18.0 - UBAH SEMUA VERSI 2.15.1 MENJADI 2.18.0 Test
     implementation 'com.google.android.exoplayer:exoplayer:2.18.0'
     implementation 'com.google.android.exoplayer:exoplayer-rtsp:2.18.0'
     implementation('com.google.android.exoplayer:extension-rtmp:2.18.0') {
