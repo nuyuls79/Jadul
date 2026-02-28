@@ -89,39 +89,16 @@
             app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
             app:spanCount="4" />
 
-        <!-- Loading Shimmer (hanya untuk sidebar) -->
-        <com.facebook.shimmer.ShimmerFrameLayout
+        <!-- ProgressBar loading di tengah layar -->
+        <ProgressBar
             android:id="@+id/loading"
-            android:layout_width="180dp"
-            android:layout_height="0dp"
-            android:layout_marginTop="60dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginBottom="8dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:visibility="gone"
-            app:shimmer_auto_start="true"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_buttons">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <!-- Dummy items (sesuaikan jumlahnya) -->
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-                <include layout="@layout/item_category_dummy" />
-            </LinearLayout>
-
-        </com.facebook.shimmer.ShimmerFrameLayout>
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
