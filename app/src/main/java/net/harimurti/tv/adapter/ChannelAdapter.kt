@@ -5,14 +5,14 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView  // TAMBAHKAN INI
+import android.widget.Button  // Tambahkan import Button
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import net.harimurti.tv.BR  // IMPORT INI PENTING
+import net.harimurti.tv.BR
 import net.harimurti.tv.MainActivity
 import net.harimurti.tv.PlayerActivity
 import net.harimurti.tv.R
@@ -38,6 +38,11 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
             itemChBinding.setVariable(BR.modelChannel, obj)
             itemChBinding.executePendingBindings()
         }
+        
+        // Helper untuk mengakses button
+        fun getPlayButton(): Button {
+            return itemChBinding.btnPlay
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -54,21 +59,32 @@ class ChannelAdapter (val channels: ArrayList<Channel>?, private val catId: Int,
         viewHolder.itemChBinding.chId = position
         viewHolder.itemChBinding.clickListener = this
 
-        // Load logo channel
-        loadChannelLogo(viewHolder.itemChBinding.ivChannelLogo, channel)
+        // Load logo ke background button jika ada logoUrl
+        loadChannelLogoToButton(viewHolder.getPlayButton(), channel)
     }
 
-    private fun loadChannelLogo(imageView: ImageView, channel: Channel?) {
+    private fun loadChannelLogoToButton(button: Button, channel: Channel?) {
         val logoUrl = channel?.logoUrl
         if (!logoUrl.isNullOrEmpty()) {
+            // Jika ada logo, load dengan Glide
             Glide.with(context)
                 .load(logoUrl)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .placeholder(R.drawable.ic_default_logo)
                 .error(R.drawable.ic_default_logo)
-                .into(imageView)
+                .into(object : com.bumptech.glide.request.target.CustomTarget<android.graphics.drawable.Drawable>() {
+                    override fun onResourceReady(resource: android.graphics.drawable.Drawable, transition: com.bumptech.glide.request.transition.Transition<in android.graphics.drawable.Drawable>?) {
+                        // Set sebagai background atau compound drawable
+                        button.setCompoundDrawablesWithIntrinsicBounds(null, resource, null, null)
+                    }
+
+                    override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                        button.setCompoundDrawablesWithIntrinsicBounds(null, placeholder, null, null)
+                    }
+                })
         } else {
-            imageView.setImageResource(R.drawable.ic_default_logo)
+            // Jika tidak ada logo, set default
+            button.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_default_logo, 0, 0)
         }
     }
 
