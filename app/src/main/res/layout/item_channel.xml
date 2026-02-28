@@ -39,14 +39,14 @@
                 android:id="@+id/iv_channel_logo"
                 android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:layout_marginBottom="8dp"  <!-- Jarak antara logo dan nama -->
+                android:layout_marginBottom="8dp"
                 android:scaleType="fitCenter"
                 android:adjustViewBounds="true"
                 android:padding="4dp"
                 android:importantForAccessibility="no"
                 tools:src="@drawable/ic_default_logo" />
 
-            <!-- Nama channel dengan background berbeda -->
+            <!-- Nama channel dengan background berbeda, hanya ini yang dapat diklik -->
             <TextView
                 android:id="@+id/tv_channel_name"
                 android:layout_width="match_parent"
