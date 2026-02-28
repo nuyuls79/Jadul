@@ -11,13 +11,14 @@
         android:layout_height="match_parent"
         android:background="#121212">
 
-        <!-- Header baru: informasi waktu dan judul -->
+        <!-- Header: LIVE TV 1 VIP, waktu, dan ikon -->
         <LinearLayout
             android:id="@+id/layout_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="8dp"
+            android:gravity="center_vertical"
             android:background="#1E1E1E"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -39,20 +40,10 @@
                 android:layout_height="wrap_content"
                 android:text="16:06 WIB 28/02/2026"
                 android:textColor="#E91E63"
-                android:textSize="14sp" />
-        </LinearLayout>
+                android:textSize="14sp"
+                android:layout_marginEnd="8dp" />
 
-        <!-- Tombol atas (sekarang di bawah header) -->
-        <LinearLayout
-            android:id="@+id/layout_buttons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="4dp"
-            android:elevation="10dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_header"> <!-- Berubah dari top ke parent -->
-
+            <!-- Tombol-tombol (ikon) -->
             <ImageButton
                 android:id="@+id/button_search"
                 android:layout_width="40dp"
@@ -95,7 +86,7 @@
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_buttons"
+            app:layout_constraintTop_toBottomOf="@id/layout_header"
             android:adapter="@{catAdapter}"
             android:background="#1E1E1E"
             android:overScrollMode="never"
@@ -116,7 +107,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/rv_category"
-            app:layout_constraintTop_toBottomOf="@id/layout_buttons"
+            app:layout_constraintTop_toBottomOf="@id/layout_header"
             app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
             app:spanCount="4" />
 
