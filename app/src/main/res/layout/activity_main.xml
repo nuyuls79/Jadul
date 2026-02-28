@@ -11,7 +11,7 @@
         android:layout_height="match_parent"
         android:background="#121212">
 
-        <!-- Tombol atas - lebih kecil & rapat -->
+        <!-- Tombol atas -->
         <LinearLayout
             android:id="@+id/layout_buttons"
             android:layout_width="wrap_content"
@@ -52,7 +52,7 @@
                 app:srcCompat="@drawable/ic_exit" />
         </LinearLayout>
 
-        <!-- SIDEBAR KATEGORI - LANGSUNG DI BAWAH BUTTON (TANPA MARGIN) -->
+        <!-- Sidebar Kategori -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_category"
             android:layout_width="180dp"
@@ -71,7 +71,7 @@
             android:paddingTop="2dp"
             android:paddingBottom="2dp" />
 
-        <!-- GRID CHANNEL - LANGSUNG DI BAWAH BUTTON (TANPA MARGIN) -->
+        <!-- Grid Channel -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_channels"
             android:layout_width="0dp"
@@ -89,11 +89,11 @@
             app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
             app:spanCount="4" />
 
-        <!-- Loading Shimmer -->
+        <!-- Loading Shimmer (hanya untuk sidebar) -->
         <com.facebook.shimmer.ShimmerFrameLayout
             android:id="@+id/loading"
-            android:layout_width="180dp"   <!-- Lebar sama dengan sidebar -->
-            android:layout_height="0dp"     <!-- Tinggi mengikuti constraint -->
+            android:layout_width="180dp"
+            android:layout_height="0dp"
             android:layout_marginTop="60dp"
             android:layout_marginStart="8dp"
             android:layout_marginBottom="8dp"
@@ -102,13 +102,13 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/layout_buttons">
-        
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
-        
-                <!-- Ulangi dummy sebanyak perkiraan jumlah kategori -->
+
+                <!-- Dummy items (sesuaikan jumlahnya) -->
                 <include layout="@layout/item_category_dummy" />
                 <include layout="@layout/item_category_dummy" />
                 <include layout="@layout/item_category_dummy" />
@@ -121,7 +121,7 @@
                 <include layout="@layout/item_category_dummy" />
             </LinearLayout>
 
-</com.facebook.shimmer.ShimmerFrameLayout>
-        
+        </com.facebook.shimmer.ShimmerFrameLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
