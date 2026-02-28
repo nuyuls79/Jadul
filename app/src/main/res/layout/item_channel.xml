@@ -25,10 +25,7 @@
         app:cardBackgroundColor="#2A2A2A"
         app:cardCornerRadius="8dp"
         app:cardElevation="2dp"
-        android:focusable="true"
-        android:onClick="@{() -> clickListener.onClicked(modelChannel, catId, chId)}"
-        android:onLongClick="@{() -> clickListener.onLongClicked(modelChannel, catId, chId)}"
-        android:onFocusChange="@{(v, hasFocus) -> clickListener.onFocusChanged(v, hasFocus)}">
+        android:focusable="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -37,7 +34,7 @@
             android:gravity="center"
             android:padding="8dp">
 
-            <!-- Logo channel -->
+            <!-- Logo channel (tidak dapat diklik) -->
             <ImageView
                 android:id="@+id/iv_channel_logo"
                 android:layout_width="56dp"
@@ -45,9 +42,10 @@
                 android:scaleType="fitCenter"
                 android:adjustViewBounds="true"
                 android:padding="4dp"
+                android:importantForAccessibility="no"
                 tools:src="@drawable/ic_default_logo" />
 
-            <!-- Nama channel -->
+            <!-- Nama channel (hanya ini yang dapat diklik untuk play) -->
             <TextView
                 android:id="@+id/tv_channel_name"
                 android:layout_width="match_parent"
@@ -60,6 +58,9 @@
                 android:maxLines="2"
                 android:ellipsize="end"
                 android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:onClick="@{() -> clickListener.onClicked(modelChannel, catId, chId)}"
                 tools:text="RCTI" />
 
         </LinearLayout>
