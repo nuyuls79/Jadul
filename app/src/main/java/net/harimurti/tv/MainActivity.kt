@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Set judul header (bisa diubah sesuai keinginan)
+        // Set judul header
         binding.tvHeaderTitle.text = "LIVE TV 1 VIP"
 
         binding.buttonSearch.setOnClickListener { openSearch() }
@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupAdapter()
-        startClock() // Mulai update jam real-time
+        startClock()
 
         if (!Playlist.cached.isCategoriesEmpty()) {
             setPlaylistToAdapter(Playlist.cached)
@@ -104,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         runnable = object : Runnable {
             override fun run() {
                 updateTime()
-                handler?.postDelayed(this, 1000) // update setiap detik
+                handler?.postDelayed(this, 1000)
             }
         }
         handler?.post(runnable!!)
@@ -183,19 +183,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePlaylist(useCache: Boolean) {
-        // Tampilkan loading dan sembunyikan konten
+        // Tampilkan loading
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
 
+        val startTime = System.currentTimeMillis()
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
             override fun onError(source: String, error: String) {}
             override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
             override fun onFinish() {
-                runOnUiThread {
-                    setPlaylistToAdapter(playlistSet)
-                }
+                val elapsed = System.currentTimeMillis() - startTime
+                val delay = if (elapsed < 500) 500 - elapsed else 0 // minimal 500ms
+                Handler(Looper.getMainLooper()).postDelayed({
+                    runOnUiThread {
+                        setPlaylistToAdapter(playlistSet)
+                    }
+                }, delay)
             }
         }).process(useCache)
     }
