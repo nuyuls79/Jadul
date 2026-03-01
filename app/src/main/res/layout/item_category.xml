@@ -25,10 +25,12 @@
             android:text="@{catModel.name}"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
-            android:maxLines="1"
+            android:singleLine="true"
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
             android:scrollHorizontally="true"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
             android:background="@null"
             tools:text="EVENT 027/FEBRUARI/2026" />
 
