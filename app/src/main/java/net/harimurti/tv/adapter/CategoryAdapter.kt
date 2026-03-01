@@ -29,11 +29,10 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val dataObj = categories?.get(position) ?: return
-        
+
         holder.binding.textCategory.apply {
             text = dataObj.name ?: ""
-            
-            // Styling untuk sidebar
+
             if (selectedPos == position) {
                 setTextColor(Color.WHITE)
                 setBackgroundResource(R.drawable.category_sidebar_item)
@@ -46,10 +45,7 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
                 setTypeface(null, android.graphics.Typeface.NORMAL)
             }
         }
-    
-        // AKTIFKAN MARQUEE UNTUK SEMUA ITEM
-        holder.binding.textCategory.isSelected = true
-    
+
         holder.itemView.setOnClickListener {
             if (selectedPos != holder.adapterPosition) {
                 val oldPos = selectedPos
@@ -62,11 +58,11 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
     }
 
     override fun getItemCount(): Int = categories?.size ?: 0
-    
+
     fun setOnCategoryClickListener(listener: (Int) -> Unit) {
         this.onCategoryClickListener = listener
     }
-    
+
     fun setSelectedPosition(position: Int) {
         if (position != selectedPos && position < itemCount) {
             val oldPos = selectedPos
@@ -75,18 +71,18 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
             notifyItemChanged(selectedPos)
         }
     }
-    
+
     fun updateData(newCategories: ArrayList<Category>?) {
         categories?.clear()
         newCategories?.let { categories?.addAll(it) }
         notifyDataSetChanged()
     }
-    
-    fun insertOrUpdateFavorite() { 
-        notifyDataSetChanged() 
+
+    fun insertOrUpdateFavorite() {
+        notifyDataSetChanged()
     }
-    
-    fun removeFavorite() { 
-        notifyDataSetChanged() 
+
+    fun removeFavorite() {
+        notifyDataSetChanged()
     }
 }
