@@ -1,0 +1,91 @@
+package net.harimurti.tv.adapter
+
+import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.databinding.DataBindingUtil
+import androidx.recyclerview.widget.RecyclerView
+import net.harimurti.tv.R
+import net.harimurti.tv.databinding.ItemCategoryBinding
+import net.harimurti.tv.model.Category
+
+class CategoryAdapter(private val categories: ArrayList<Category>?) :
+    RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
+
+    private lateinit var context: Context
+    private var selectedPos = 0
+    private var onCategoryClickListener: ((Int) -> Unit)? = null
+
+    class ViewHolder(val binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        context = parent.context
+        val binding: ItemCategoryBinding = DataBindingUtil.inflate(
+            LayoutInflater.from(context), R.layout.item_category, parent, false
+        )
+        return ViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val dataObj = categories?.get(position) ?: return
+
+        holder.binding.textCategory.apply {
+            text = dataObj.name ?: ""
+            
+            // MARQUEE: aktif untuk semua item
+            isSelected = true
+
+            // HIGHLIGHT: atur background dan warna berdasarkan posisi terpilih
+            if (selectedPos == position) {
+                setBackgroundColor(Color.parseColor("#80E91E63")) // ungu transparan
+                setTextColor(Color.WHITE)
+                setTypeface(null, Typeface.BOLD)
+            } else {
+                setBackgroundColor(Color.TRANSPARENT)
+                setTextColor(Color.LTGRAY)
+                setTypeface(null, Typeface.NORMAL)
+            }
+        }
+
+        holder.itemView.setOnClickListener {
+            if (selectedPos != holder.adapterPosition) {
+                val oldPos = selectedPos
+                selectedPos = holder.adapterPosition
+                notifyItemChanged(oldPos)
+                notifyItemChanged(selectedPos)
+                onCategoryClickListener?.invoke(selectedPos)
+            }
+        }
+    }
+
+    override fun getItemCount(): Int = categories?.size ?: 0
+
+    fun setOnCategoryClickListener(listener: (Int) -> Unit) {
+        this.onCategoryClickListener = listener
+    }
+
+    fun setSelectedPosition(position: Int) {
+        if (position != selectedPos && position < itemCount) {
+            val oldPos = selectedPos
+            selectedPos = position
+            notifyItemChanged(oldPos)
+            notifyItemChanged(selectedPos)
+        }
+    }
+
+    fun updateData(newCategories: ArrayList<Category>?) {
+        categories?.clear()
+        newCategories?.let { categories?.addAll(it) }
+        notifyDataSetChanged()
+    }
+
+    fun insertOrUpdateFavorite() {
+        notifyDataSetChanged()
+    }
+
+    fun removeFavorite() {
+        notifyDataSetChanged()
+    }
+}
