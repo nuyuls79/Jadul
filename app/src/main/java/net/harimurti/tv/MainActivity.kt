@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity() {
         categoryAdapter.setOnCategoryClickListener { position ->
             onCategoryClicked(position)
         }
-        // Penting: set layout manager secara eksplisit
+        // Pastikan layout manager diatur dengan orientasi vertical
         binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.rvCategory.adapter = categoryAdapter
         binding.setCatAdapter(categoryAdapter)
@@ -161,6 +161,7 @@ class MainActivity : AppCompatActivity() {
 
         val categories = playlistSet.categories ?: arrayListOf()
 
+        // Update data adapter
         categoryAdapter.updateData(categories)
 
         if (categories.isNotEmpty()) {
@@ -186,13 +187,17 @@ class MainActivity : AppCompatActivity() {
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
 
-        // Paksa RecyclerView untuk menggambar ulang semua item
+        // === SOLUSI UNTUK MEMUNCULKAN SEMUA ITEM TANPA SCROLL ===
         binding.rvCategory.post {
-            if (categoryAdapter.itemCount > 0) {
-                categoryAdapter.notifyDataSetChanged()
-                binding.rvCategory.scrollToPosition(currentCategoryPosition)
-                binding.rvCategory.requestLayout()
-            }
+            // Notifikasi perubahan data
+            categoryAdapter.notifyDataSetChanged()
+            // Scroll ke posisi yang dipilih (opsional)
+            binding.rvCategory.scrollToPosition(currentCategoryPosition)
+            // Paksa RecyclerView untuk mengukur ulang dirinya
+            binding.rvCategory.requestLayout()
+            // Trik: sembunyikan dan tampilkan kembali untuk memicu layout
+            binding.rvCategory.visibility = View.INVISIBLE
+            binding.rvCategory.visibility = View.VISIBLE
         }
     }
 
