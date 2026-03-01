@@ -33,13 +33,17 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
 
         holder.binding.textCategory.apply {
             text = dataObj.name ?: ""
-            // Set selected state berdasarkan posisi
-            isSelected = (selectedPos == position)
+            
+            // MARQUEE: aktif untuk semua item
+            isSelected = true
 
+            // HIGHLIGHT: atur background dan warna berdasarkan posisi terpilih
             if (selectedPos == position) {
+                setBackgroundColor(Color.parseColor("#80E91E63")) // ungu transparan
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
             } else {
+                setBackgroundColor(Color.TRANSPARENT)
                 setTextColor(Color.LTGRAY)
                 setTypeface(null, Typeface.NORMAL)
             }
