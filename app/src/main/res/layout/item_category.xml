@@ -29,7 +29,7 @@
             android:ellipsize="marquee"
             android:marqueeRepeatLimit="marquee_forever"
             android:scrollHorizontally="true"
-            android:background="@drawable/bg_category_item"
+            android:background="@drawable/bg_category_item_transparent"
             tools:text="EVENT 027/FEBRUARI/2026" />
 
     </LinearLayout>
