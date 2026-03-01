@@ -128,6 +128,8 @@ class MainActivity : AppCompatActivity() {
         categoryAdapter.setOnCategoryClickListener { position ->
             onCategoryClicked(position)
         }
+        // Penting: set layout manager secara eksplisit
+        binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.rvCategory.adapter = categoryAdapter
         binding.setCatAdapter(categoryAdapter)
     }
@@ -184,11 +186,12 @@ class MainActivity : AppCompatActivity() {
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
 
-        // Paksa RecyclerView untuk menggambar ulang setelah layout selesai
+        // Paksa RecyclerView untuk menggambar ulang semua item
         binding.rvCategory.post {
             if (categoryAdapter.itemCount > 0) {
                 categoryAdapter.notifyDataSetChanged()
                 binding.rvCategory.scrollToPosition(currentCategoryPosition)
+                binding.rvCategory.requestLayout()
             }
         }
     }
