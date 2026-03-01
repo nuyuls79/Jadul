@@ -3,7 +3,6 @@ package net.harimurti.tv
 import android.content.*
 import android.content.pm.ActivityInfo
 import android.os.*
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -17,7 +16,7 @@ import net.harimurti.tv.dialog.SearchDialog
 import net.harimurti.tv.dialog.SettingDialog
 import net.harimurti.tv.extension.*
 import net.harimurti.tv.extra.*
-import net.himurti.tv.model.*
+import net.harimurti.tv.model.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var currentCategory: Category? = null
     private var isDataLoaded = false
 
+    // Untuk jam real-time
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private var handler: Handler? = null
@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Set judul header
         binding.tvHeaderTitle.text = "LIVE TV 1 VIP"
 
         binding.buttonSearch.setOnClickListener { openSearch() }
@@ -127,7 +128,6 @@ class MainActivity : AppCompatActivity() {
         categoryAdapter.setOnCategoryClickListener { position ->
             onCategoryClicked(position)
         }
-        binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.rvCategory.adapter = categoryAdapter
         binding.setCatAdapter(categoryAdapter)
     }
@@ -144,20 +144,20 @@ class MainActivity : AppCompatActivity() {
     private fun displayChannels(category: Category?, position: Int) {
         currentCategoryPosition = position
         currentCategory = category
+
         val channels = category?.channels
         val spanCount = if (isTelevision) 8 else 4
         binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
+
         val channelAdapter = ChannelAdapter(channels, position, false)
         binding.rvChannels.adapter = channelAdapter
     }
 
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
-        Log.d("MainActivity", "setPlaylistToAdapter dipanggil")
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (fav?.channels?.isNotEmpty() == true) playlistSet.insertFavorite(fav.channels)
 
         val categories = playlistSet.categories ?: arrayListOf()
-        Log.d("MainActivity", "Jumlah kategori: ${categories.size}")
 
         categoryAdapter.updateData(categories)
 
@@ -167,31 +167,23 @@ class MainActivity : AppCompatActivity() {
             }
             categoryAdapter.setSelectedPosition(currentCategoryPosition)
 
-            val targetPosition = if (currentCategoryPosition < categories.size) currentCategoryPosition else 0
+            val targetPosition = if (currentCategoryPosition < categories.size)
+                currentCategoryPosition else 0
             currentCategory = categories[targetPosition]
             displayChannels(currentCategory, targetPosition)
-        } else {
-            binding.rvChannels.adapter = null
-            Toast.makeText(this, "Tidak ada kategori", Toast.LENGTH_SHORT).show()
         }
 
         Playlist.cached = playlistSet
         isDataLoaded = true
 
+        // Sembunyikan loading dan tampilkan konten
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
-
-        // Paksa RecyclerView untuk merender ulang setelah layout selesai
-        binding.rvCategory.post {
-            categoryAdapter.notifyDataSetChanged()
-            binding.rvCategory.scrollToPosition(currentCategoryPosition)
-            binding.rvCategory.invalidate()
-        }
     }
 
     private fun updatePlaylist(useCache: Boolean) {
-        Log.d("MainActivity", "updatePlaylist dipanggil, useCache=$useCache")
+        // Tampilkan loading
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
@@ -199,22 +191,11 @@ class MainActivity : AppCompatActivity() {
         val startTime = System.currentTimeMillis()
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
-            override fun onError(source: String, error: String) {
-                Log.e("MainActivity", "Error: $error")
-                runOnUiThread {
-                    binding.loading.visibility = View.GONE
-                    Toast.makeText(this@MainActivity, "Gagal memuat playlist", Toast.LENGTH_SHORT).show()
-                    if (!Playlist.cached.isCategoriesEmpty()) {
-                        setPlaylistToAdapter(Playlist.cached)
-                    }
-                }
-            }
-            override fun onResponse(playlist: Playlist?) {
-                playlist?.let { playlistSet.mergeWith(it) }
-            }
+            override fun onError(source: String, error: String) {}
+            override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
             override fun onFinish() {
                 val elapsed = System.currentTimeMillis() - startTime
-                val delay = if (elapsed < 500) 500 - elapsed else 0
+                val delay = if (elapsed < 500) 500 - elapsed else 0 // minimal 500ms
                 Handler(Looper.getMainLooper()).postDelayed({
                     runOnUiThread {
                         setPlaylistToAdapter(playlistSet)
