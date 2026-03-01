@@ -50,7 +50,7 @@ class SplashActivity : AppCompatActivity() {
         }
         binding.textUsers.text = preferences.contributors
 
-        // update constributors
+        // update contributors
         HttpClient(true)
             .create(getString(R.string.gh_contributors).toRequest())
             .enqueue(object: Callback {
@@ -73,27 +73,8 @@ class SplashActivity : AppCompatActivity() {
                 }
             })
 
-        // first time alert
-        if (preferences.isFirstTime) {
-            AlertDialog.Builder(this).apply {
-                setTitle(R.string.app_name)
-                setMessage(R.string.alert_first_time)
-                setCancelable(false)
-                setPositiveButton(android.R.string.ok) { di,_ ->
-                    preferences.isFirstTime = false
-                    prepareWhatIsNeeded()
-                    di.dismiss()
-                }
-                setNeutralButton(R.string.button_website) { _,_ ->
-                    preferences.isFirstTime = false
-                    openWebsite(getString(R.string.website))
-                    finish()
-                }
-                create()
-                show()
-            }
-        }
-        else prepareWhatIsNeeded()
+        // Langsung lakukan persiapan tanpa dialog peringatan
+        prepareWhatIsNeeded()
     }
 
     override fun onBackPressed() {
