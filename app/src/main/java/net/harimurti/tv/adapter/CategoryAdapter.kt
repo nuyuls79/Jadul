@@ -33,17 +33,17 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
 
         holder.binding.textCategory.apply {
             text = dataObj.name ?: ""
-            
-            // MARQUEE: aktif untuk semua item
+
+            // Marquee untuk semua item
             isSelected = true
 
-            // HIGHLIGHT: atur background dan warna berdasarkan posisi terpilih
+            // Background dan warna berdasarkan posisi terpilih
             if (selectedPos == position) {
-                setBackgroundColor(Color.parseColor("#80E91E63")) // ungu transparan
+                setBackgroundResource(R.drawable.bg_category_highlight)
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
             } else {
-                setBackgroundColor(Color.TRANSPARENT)
+                setBackgroundResource(R.drawable.bg_category_default)
                 setTextColor(Color.LTGRAY)
                 setTypeface(null, Typeface.NORMAL)
             }
