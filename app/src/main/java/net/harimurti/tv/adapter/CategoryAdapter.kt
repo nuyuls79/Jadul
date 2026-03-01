@@ -2,6 +2,7 @@ package net.harimurti.tv.adapter
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
@@ -32,17 +33,15 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
 
         holder.binding.textCategory.apply {
             text = dataObj.name ?: ""
+            // Set selected state berdasarkan posisi
+            isSelected = (selectedPos == position)
 
             if (selectedPos == position) {
                 setTextColor(Color.WHITE)
-                setBackgroundResource(R.drawable.category_sidebar_item)
-                isSelected = true
-                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTypeface(null, Typeface.BOLD)
             } else {
                 setTextColor(Color.LTGRAY)
-                setBackgroundResource(R.drawable.category_sidebar_item)
-                isSelected = false
-                setTypeface(null, android.graphics.Typeface.NORMAL)
+                setTypeface(null, Typeface.NORMAL)
             }
         }
 
