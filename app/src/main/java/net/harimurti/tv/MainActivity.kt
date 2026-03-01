@@ -3,6 +3,7 @@ package net.harimurti.tv
 import android.content.*
 import android.content.pm.ActivityInfo
 import android.os.*
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -14,7 +15,7 @@ import net.harimurti.tv.adapter.ChannelAdapter
 import net.harimurti.tv.databinding.ActivityMainBinding
 import net.harimurti.tv.dialog.SearchDialog
 import net.harimurti.tv.dialog.SettingDialog
-import net.harimurti.tv.extension.*
+import net.himurti.tv.extension.*
 import net.harimurti.tv.extra.*
 import net.harimurti.tv.model.*
 import java.text.SimpleDateFormat
@@ -30,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     private var currentCategory: Category? = null
     private var isDataLoaded = false
 
-    // Untuk jam real-time
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private var handler: Handler? = null
@@ -75,9 +75,12 @@ class MainActivity : AppCompatActivity() {
         setupAdapter()
         startClock()
 
+        // Cek apakah sudah ada data cache
         if (!Playlist.cached.isCategoriesEmpty()) {
+            Log.d("MainActivity", "Data cache ditemukan, langsung tampilkan")
             setPlaylistToAdapter(Playlist.cached)
         } else {
+            Log.d("MainActivity", "Tidak ada cache, memuat playlist...")
             updatePlaylist(true)
         }
     }
@@ -85,6 +88,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         startClock()
+        // Jika data sudah dimuat tapi kategori belum muncul, paksa refresh
+        if (isDataLoaded && categoryAdapter.itemCount == 0) {
+            categoryAdapter.notifyDataSetChanged()
+        }
     }
 
     override fun onPause() {
@@ -144,21 +151,22 @@ class MainActivity : AppCompatActivity() {
     private fun displayChannels(category: Category?, position: Int) {
         currentCategoryPosition = position
         currentCategory = category
-
         val channels = category?.channels
         val spanCount = if (isTelevision) 8 else 4
         binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
-
         val channelAdapter = ChannelAdapter(channels, position, false)
         binding.rvChannels.adapter = channelAdapter
     }
 
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
+        Log.d("MainActivity", "setPlaylistToAdapter dipanggil")
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
         if (fav?.channels?.isNotEmpty() == true) playlistSet.insertFavorite(fav.channels)
 
         val categories = playlistSet.categories ?: arrayListOf()
+        Log.d("MainActivity", "Jumlah kategori: ${categories.size}")
 
+        // Update adapter
         categoryAdapter.updateData(categories)
 
         if (categories.isNotEmpty()) {
@@ -167,26 +175,32 @@ class MainActivity : AppCompatActivity() {
             }
             categoryAdapter.setSelectedPosition(currentCategoryPosition)
 
-            val targetPosition = if (currentCategoryPosition < categories.size)
-                currentCategoryPosition else 0
+            val targetPosition = if (currentCategoryPosition < categories.size) currentCategoryPosition else 0
             currentCategory = categories[targetPosition]
             displayChannels(currentCategory, targetPosition)
+        } else {
+            binding.rvChannels.adapter = null
+            Toast.makeText(this, "Tidak ada kategori", Toast.LENGTH_SHORT).show()
         }
 
         Playlist.cached = playlistSet
         isDataLoaded = true
 
+        // Sembunyikan loading dan tampilkan konten
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
 
-        // Memastikan RecyclerView kategori merender ulang
+        // Paksa RecyclerView untuk menggambar ulang
         binding.rvCategory.post {
             categoryAdapter.notifyDataSetChanged()
+            // Scroll ke posisi yang dipilih (opsional)
+            binding.rvCategory.scrollToPosition(currentCategoryPosition)
         }
     }
 
     private fun updatePlaylist(useCache: Boolean) {
+        Log.d("MainActivity", "updatePlaylist dipanggil, useCache=$useCache")
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
@@ -194,8 +208,20 @@ class MainActivity : AppCompatActivity() {
         val startTime = System.currentTimeMillis()
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
-            override fun onError(source: String, error: String) {}
-            override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
+            override fun onError(source: String, error: String) {
+                Log.e("MainActivity", "Error: $error")
+                runOnUiThread {
+                    binding.loading.visibility = View.GONE
+                    Toast.makeText(this@MainActivity, "Gagal memuat playlist", Toast.LENGTH_SHORT).show()
+                    // Jika ada cache, tampilkan
+                    if (!Playlist.cached.isCategoriesEmpty()) {
+                        setPlaylistToAdapter(Playlist.cached)
+                    }
+                }
+            }
+            override fun onResponse(playlist: Playlist?) {
+                playlist?.let { playlistSet.mergeWith(it) }
+            }
             override fun onFinish() {
                 val elapsed = System.currentTimeMillis() - startTime
                 val delay = if (elapsed < 500) 500 - elapsed else 0
