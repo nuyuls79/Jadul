@@ -171,6 +171,9 @@ class MainActivity : AppCompatActivity() {
                 currentCategoryPosition else 0
             currentCategory = categories[targetPosition]
             displayChannels(currentCategory, targetPosition)
+        } else {
+            binding.rvChannels.adapter = null
+            Toast.makeText(this, "Tidak ada kategori", Toast.LENGTH_SHORT).show()
         }
 
         Playlist.cached = playlistSet
@@ -180,6 +183,14 @@ class MainActivity : AppCompatActivity() {
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
+
+        // Paksa RecyclerView untuk menggambar ulang setelah layout selesai
+        binding.rvCategory.post {
+            if (categoryAdapter.itemCount > 0) {
+                categoryAdapter.notifyDataSetChanged()
+                binding.rvCategory.scrollToPosition(currentCategoryPosition)
+            }
+        }
     }
 
     private fun updatePlaylist(useCache: Boolean) {
@@ -191,7 +202,16 @@ class MainActivity : AppCompatActivity() {
         val startTime = System.currentTimeMillis()
         val playlistSet = Playlist()
         SourcesReader().set(preferences.sources, object: SourcesReader.Result {
-            override fun onError(source: String, error: String) {}
+            override fun onError(source: String, error: String) {
+                runOnUiThread {
+                    binding.loading.visibility = View.GONE
+                    Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_SHORT).show()
+                    // Tampilkan cache jika ada
+                    if (!Playlist.cached.isCategoriesEmpty()) {
+                        setPlaylistToAdapter(Playlist.cached)
+                    }
+                }
+            }
             override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
             override fun onFinish() {
                 val elapsed = System.currentTimeMillis() - startTime
