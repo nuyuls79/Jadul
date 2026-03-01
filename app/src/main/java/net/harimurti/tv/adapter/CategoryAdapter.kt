@@ -33,9 +33,11 @@ class CategoryAdapter(private val categories: ArrayList<Category>?) :
 
         holder.binding.textCategory.apply {
             text = dataObj.name ?: ""
-            // Set selected state berdasarkan posisi
-            isSelected = (selectedPos == position)
+            
+            // AKTIFKAN MARQUEE UNTUK SEMUA ITEM (tanpa syarat)
+            isSelected = true
 
+            // Styling berdasarkan posisi terpilih
             if (selectedPos == position) {
                 setTextColor(Color.WHITE)
                 setTypeface(null, Typeface.BOLD)
