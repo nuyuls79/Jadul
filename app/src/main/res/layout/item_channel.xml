@@ -25,7 +25,7 @@
         app:cardBackgroundColor="#2A2A2A"
         app:cardCornerRadius="8dp"
         app:cardElevation="2dp"
-        android:focusable="false">   <!-- CardView tidak boleh fokus agar tidak mengganggu klik -->
+        android:focusable="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -62,7 +62,7 @@
                 android:focusable="true"
                 android:focusableInTouchMode="true"
                 android:clickable="true"
-                android:longClickable="false"   <!-- Hindari konflik long click -->
+                android:longClickable="false"
                 android:gravity="center"
                 android:background="@drawable/bg_channel_name"
                 android:onClick="@{() -> clickListener.onClicked(modelChannel, catId, chId)}"
