@@ -59,7 +59,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Set judul header
         binding.tvHeaderTitle.text = "LIVE TV 1 VIP"
 
         binding.buttonSearch.setOnClickListener { openSearch() }
@@ -128,6 +127,7 @@ class MainActivity : AppCompatActivity() {
         categoryAdapter.setOnCategoryClickListener { position ->
             onCategoryClicked(position)
         }
+        binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.rvCategory.adapter = categoryAdapter
         binding.setCatAdapter(categoryAdapter)
     }
@@ -176,14 +176,17 @@ class MainActivity : AppCompatActivity() {
         Playlist.cached = playlistSet
         isDataLoaded = true
 
-        // Sembunyikan loading dan tampilkan konten
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
+
+        // Memastikan RecyclerView kategori merender ulang
+        binding.rvCategory.post {
+            categoryAdapter.notifyDataSetChanged()
+        }
     }
 
     private fun updatePlaylist(useCache: Boolean) {
-        // Tampilkan loading
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
@@ -195,7 +198,7 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
             override fun onFinish() {
                 val elapsed = System.currentTimeMillis() - startTime
-                val delay = if (elapsed < 500) 500 - elapsed else 0 // minimal 500ms
+                val delay = if (elapsed < 500) 500 - elapsed else 0
                 Handler(Looper.getMainLooper()).postDelayed({
                     runOnUiThread {
                         setPlaylistToAdapter(playlistSet)
