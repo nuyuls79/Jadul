@@ -15,9 +15,9 @@ import net.harimurti.tv.adapter.ChannelAdapter
 import net.harimurti.tv.databinding.ActivityMainBinding
 import net.harimurti.tv.dialog.SearchDialog
 import net.harimurti.tv.dialog.SettingDialog
-import net.himurti.tv.extension.*
+import net.harimurti.tv.extension.*
 import net.harimurti.tv.extra.*
-import net.harimurti.tv.model.*
+import net.himurti.tv.model.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -75,12 +75,9 @@ class MainActivity : AppCompatActivity() {
         setupAdapter()
         startClock()
 
-        // Cek apakah sudah ada data cache
         if (!Playlist.cached.isCategoriesEmpty()) {
-            Log.d("MainActivity", "Data cache ditemukan, langsung tampilkan")
             setPlaylistToAdapter(Playlist.cached)
         } else {
-            Log.d("MainActivity", "Tidak ada cache, memuat playlist...")
             updatePlaylist(true)
         }
     }
@@ -88,10 +85,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         startClock()
-        // Jika data sudah dimuat tapi kategori belum muncul, paksa refresh
-        if (isDataLoaded && categoryAdapter.itemCount == 0) {
-            categoryAdapter.notifyDataSetChanged()
-        }
     }
 
     override fun onPause() {
@@ -166,7 +159,6 @@ class MainActivity : AppCompatActivity() {
         val categories = playlistSet.categories ?: arrayListOf()
         Log.d("MainActivity", "Jumlah kategori: ${categories.size}")
 
-        // Update adapter
         categoryAdapter.updateData(categories)
 
         if (categories.isNotEmpty()) {
@@ -186,16 +178,15 @@ class MainActivity : AppCompatActivity() {
         Playlist.cached = playlistSet
         isDataLoaded = true
 
-        // Sembunyikan loading dan tampilkan konten
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
 
-        // Paksa RecyclerView untuk menggambar ulang
+        // Paksa RecyclerView untuk merender ulang setelah layout selesai
         binding.rvCategory.post {
             categoryAdapter.notifyDataSetChanged()
-            // Scroll ke posisi yang dipilih (opsional)
             binding.rvCategory.scrollToPosition(currentCategoryPosition)
+            binding.rvCategory.invalidate()
         }
     }
 
@@ -213,7 +204,6 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     binding.loading.visibility = View.GONE
                     Toast.makeText(this@MainActivity, "Gagal memuat playlist", Toast.LENGTH_SHORT).show()
-                    // Jika ada cache, tampilkan
                     if (!Playlist.cached.isCategoriesEmpty()) {
                         setPlaylistToAdapter(Playlist.cached)
                     }
