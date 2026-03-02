@@ -4,6 +4,7 @@ import android.content.*
 import android.content.pm.ActivityInfo
 import android.os.*
 import android.view.View
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -36,6 +37,10 @@ class MainActivity : AppCompatActivity() {
     private var handler: Handler? = null
     private var runnable: Runnable? = null
 
+    // Untuk pemilihan sumber playlist
+    private var currentSourceIndex = 0
+    private var sourceList: ArrayList<Source> = arrayListOf()
+
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
             when(intent.getStringExtra(MAIN_CALLBACK)) {
@@ -59,9 +64,18 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Set judul header
-        binding.tvHeaderTitle.text = "LIVE TV 1 VIP"
+        // Inisialisasi daftar sumber
+        sourceList = preferences.sources ?: arrayListOf()
+        if (sourceList.isEmpty()) {
+            Toast.makeText(this, "Tidak ada sumber playlist", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
 
+        // Setup tombol pemilih sumber
+        setupSourceSelector()
+
+        // Tombol-tombol lainnya
         binding.buttonSearch.setOnClickListener { openSearch() }
         binding.buttonRefresh.setOnClickListener { updatePlaylist(false) }
         binding.buttonSettings.setOnClickListener { openSettings() }
@@ -71,16 +85,14 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState != null) {
             currentCategoryPosition = savedInstanceState.getInt("current_position", 0)
+            currentSourceIndex = savedInstanceState.getInt("current_source_index", 0)
         }
 
         setupAdapter()
         startClock()
 
-        if (!Playlist.cached.isCategoriesEmpty()) {
-            setPlaylistToAdapter(Playlist.cached)
-        } else {
-            updatePlaylist(true)
-        }
+        // Muat playlist dari sumber yang aktif (indeks 0 sebagai default)
+        loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
     override fun onResume() {
@@ -97,6 +109,12 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         stopClock()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt("current_position", currentCategoryPosition)
+        outState.putInt("current_source_index", currentSourceIndex)
     }
 
     private fun startClock() {
@@ -128,7 +146,6 @@ class MainActivity : AppCompatActivity() {
         categoryAdapter.setOnCategoryClickListener { position ->
             onCategoryClicked(position)
         }
-        // Pastikan layout manager diatur dengan orientasi vertical
         binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.rvCategory.adapter = categoryAdapter
         binding.setCatAdapter(categoryAdapter)
@@ -161,7 +178,6 @@ class MainActivity : AppCompatActivity() {
 
         val categories = playlistSet.categories ?: arrayListOf()
 
-        // Update data adapter
         categoryAdapter.updateData(categories)
 
         if (categories.isNotEmpty()) {
@@ -182,62 +198,100 @@ class MainActivity : AppCompatActivity() {
         Playlist.cached = playlistSet
         isDataLoaded = true
 
-        // Sembunyikan loading dan tampilkan konten
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
 
-        // === SOLUSI UNTUK MEMUNCULKAN SEMUA ITEM TANPA SCROLL ===
         binding.rvCategory.post {
-            // Notifikasi perubahan data
             categoryAdapter.notifyDataSetChanged()
-            // Scroll ke posisi yang dipilih (opsional)
             binding.rvCategory.scrollToPosition(currentCategoryPosition)
-            // Paksa RecyclerView untuk mengukur ulang dirinya
             binding.rvCategory.requestLayout()
-            // Trik: sembunyikan dan tampilkan kembali untuk memicu layout
             binding.rvCategory.visibility = View.INVISIBLE
             binding.rvCategory.visibility = View.VISIBLE
         }
     }
 
-    private fun updatePlaylist(useCache: Boolean) {
+    // ================== Bagian Pemilih Sumber ==================
+
+    private fun setupSourceSelector() {
+        updateSourceDisplay()
+        binding.tvSourceSelector.setOnClickListener {
+            showSourceMenu()
+        }
+    }
+
+    private fun updateSourceDisplay() {
+        val source = sourceList.getOrNull(currentSourceIndex)
+        binding.tvSourceSelector.text = getSourceDisplayName(source?.path ?: "")
+    }
+
+    private fun getSourceDisplayName(path: String): String {
+        return when (path) {
+            Preferences.DEFAULT_PLAYLIST_URL_1 -> "Live TV 1"
+            Preferences.DEFAULT_PLAYLIST_URL_2 -> "Live TV 2"
+            else -> "Sumber ${path.take(15)}..."
+        }
+    }
+
+    private fun showSourceMenu() {
+        val popup = PopupMenu(this, binding.tvSourceSelector)
+        sourceList.forEachIndexed { index, source ->
+            val title = getSourceDisplayName(source.path ?: "")
+            popup.menu.add(0, index, index, title)
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val index = item.itemId
+            if (index != currentSourceIndex) {
+                currentSourceIndex = index
+                updateSourceDisplay()
+                loadPlaylistFromSource(sourceList[index])
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun loadPlaylistFromSource(source: Source) {
         // Tampilkan loading
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
 
-        val startTime = System.currentTimeMillis()
         val playlistSet = Playlist()
-        SourcesReader().set(preferences.sources, object: SourcesReader.Result {
+        // Buat daftar berisi hanya satu sumber yang dipilih
+        val singleSourceList = arrayListOf(source)
+
+        SourcesReader().set(singleSourceList, object: SourcesReader.Result {
             override fun onError(source: String, error: String) {
                 runOnUiThread {
                     binding.loading.visibility = View.GONE
                     Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_SHORT).show()
-                    // Tampilkan cache jika ada
+                    // Jika gagal, mungkin kembali ke cache atau sumber sebelumnya
                     if (!Playlist.cached.isCategoriesEmpty()) {
                         setPlaylistToAdapter(Playlist.cached)
                     }
                 }
             }
-            override fun onResponse(playlist: Playlist?) { playlist?.let { playlistSet.mergeWith(it) } }
-            override fun onFinish() {
-                val elapsed = System.currentTimeMillis() - startTime
-                val delay = if (elapsed < 500) 500 - elapsed else 0 // minimal 500ms
-                Handler(Looper.getMainLooper()).postDelayed({
-                    runOnUiThread {
-                        setPlaylistToAdapter(playlistSet)
-                    }
-                }, delay)
+            override fun onResponse(playlist: Playlist?) {
+                playlist?.let { playlistSet.mergeWith(it) }
             }
-        }).process(useCache)
+            override fun onFinish() {
+                runOnUiThread {
+                    setPlaylistToAdapter(playlistSet)
+                }
+            }
+        }).process(true) // gunakan cache jika ada?
+    }
+
+    // ================== Fungsi yang sudah ada ==================
+
+    private fun updatePlaylist(useCache: Boolean) {
+        // Fungsi ini dipanggil oleh tombol refresh, mungkin kita ingin tetap memuat semua sumber?
+        // Namun sesuai permintaan, kita hanya memuat sumber yang dipilih.
+        // Jadi kita bisa memanggil loadPlaylistFromSource dengan sumber saat ini.
+        loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
     private fun openSettings() = SettingDialog().show(supportFragmentManager.beginTransaction(), null)
     private fun openSearch() = SearchDialog().show(supportFragmentManager.beginTransaction(), null)
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putInt("current_position", currentCategoryPosition)
-    }
 }
