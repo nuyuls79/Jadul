@@ -64,12 +64,20 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inisialisasi daftar sumber
+        // Inisialisasi daftar sumber dari preferences
         sourceList = preferences.sources ?: arrayListOf()
         if (sourceList.isEmpty()) {
             Toast.makeText(this, "Tidak ada sumber playlist", Toast.LENGTH_SHORT).show()
             finish()
             return
+        }
+
+        // Tentukan indeks sumber aktif
+        currentSourceIndex = sourceList.indexOfFirst { it.active }
+        if (currentSourceIndex < 0) {
+            currentSourceIndex = 0
+            sourceList[currentSourceIndex].active = true
+            preferences.sources = sourceList
         }
 
         // Setup tombol pemilih sumber
@@ -91,13 +99,22 @@ class MainActivity : AppCompatActivity() {
         setupAdapter()
         startClock()
 
-        // Muat playlist dari sumber yang aktif (indeks 0 sebagai default)
+        // Muat playlist dari sumber yang aktif
         loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
     override fun onResume() {
         super.onResume()
         startClock()
+        // Mungkin ada perubahan sumber dari dialog? Reload sourceList
+        val newList = preferences.sources ?: arrayListOf()
+        if (newList != sourceList) {
+            sourceList = newList
+            currentSourceIndex = sourceList.indexOfFirst { it.active }
+            if (currentSourceIndex < 0) currentSourceIndex = 0
+            updateSourceDisplay()
+            // Jangan reload otomatis, biarkan manual
+        }
     }
 
     override fun onPause() {
@@ -242,8 +259,16 @@ class MainActivity : AppCompatActivity() {
         popup.setOnMenuItemClickListener { item ->
             val index = item.itemId
             if (index != currentSourceIndex) {
+                // Update status aktif di sourceList
+                sourceList.forEachIndexed { i, src ->
+                    src.active = (i == index)
+                }
+                // Simpan perubahan ke preferences
+                preferences.sources = sourceList
+                // Update indeks dan tampilan
                 currentSourceIndex = index
                 updateSourceDisplay()
+                // Muat playlist dari sumber baru
                 loadPlaylistFromSource(sourceList[index])
             }
             true
@@ -286,9 +311,7 @@ class MainActivity : AppCompatActivity() {
     // ================== Fungsi yang sudah ada ==================
 
     private fun updatePlaylist(useCache: Boolean) {
-        // Fungsi ini dipanggil oleh tombol refresh, mungkin kita ingin tetap memuat semua sumber?
-        // Namun sesuai permintaan, kita hanya memuat sumber yang dipilih.
-        // Jadi kita bisa memanggil loadPlaylistFromSource dengan sumber saat ini.
+        // Panggil load dengan sumber saat ini
         loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
