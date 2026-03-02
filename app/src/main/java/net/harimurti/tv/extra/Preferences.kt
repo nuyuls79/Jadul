@@ -35,6 +35,10 @@ class Preferences {
         private const val VOLUME_CONTROL = "VOLUME_CONTROL"
         private const val SOURCES_PLAYLIST = "SOURCES_PLAYLIST"
         private const val COUNTRY_ID = "COUNTRY_ID"
+
+        // Dua URL playlist default (ganti sesuai kebutuhan)
+        const val DEFAULT_PLAYLIST_URL_1 = "https://bit.ly/KPL203"
+        const val DEFAULT_PLAYLIST_URL_2 = "https://bit.ly/KPL203"
     }
 
     var isFirstTime: Boolean
@@ -49,9 +53,8 @@ class Preferences {
         get() = preferences.getBoolean(LAUNCH_AT_BOOT, false)
         set(value) = editor.putBoolean(LAUNCH_AT_BOOT, value).apply()
 
-    // 修改：默认勾选 Play Last Watched
     var playLastWatched: Boolean
-        get() = preferences.getBoolean(OPEN_LAST_WATCHED, true)  // 改为 true
+        get() = preferences.getBoolean(OPEN_LAST_WATCHED, true)
         set(value) = editor.putBoolean(OPEN_LAST_WATCHED, value).apply()
 
     var sortFavorite: Boolean
@@ -88,23 +91,30 @@ class Preferences {
     var sources: ArrayList<Source>?
         get() {
             val result = ArrayList<Source>()
-            val default = Source().apply {
-                path = String.format(context.getString(R.string.iptv_playlist), countryId)
+            // Dua sumber default
+            val default1 = Source().apply {
+                path = DEFAULT_PLAYLIST_URL_1
                 active = true
+            }
+            val default2 = Source().apply {
+                path = DEFAULT_PLAYLIST_URL_2
+                active = false  // default kedua tidak aktif, bisa diubah di pengaturan
             }
             try {
                 val json = preferences.getString(SOURCES_PLAYLIST, null)
                 if (json.isNullOrBlank()) throw Exception("no playlist sources in preference")
                 val list = Gson().fromJson(json, Array<Source>::class.java)
                 if (list == null || list.isEmpty()) throw Exception("cannot parse sources?")
-                list.first().path = default.path
                 list.forEach {
                     if (it.path.isLinkUrl() || it.path.isPathExist()) result.add(it)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            if (result.isEmpty()) result.add(default)
+            if (result.isEmpty()) {
+                result.add(default1)
+                result.add(default2)
+            }
             val active = result.filter { it.active }
             if (active.isEmpty()) result.first().active = true
             return result
@@ -118,9 +128,8 @@ class Preferences {
         get() = preferences.getString(CONTRIBUTORS, context.getString(R.string.main_contributors))
         set(value) = editor.putString(CONTRIBUTORS, value).apply()
 
-    // 修改：Screen Size 默认 Fill（假设 3 = Fill，根据项目实际映射）
     var resizeMode: Int
-        get() = preferences.getInt(RESIZE_MODE, 3)  // 改为 3（Fill）
+        get() = preferences.getInt(RESIZE_MODE, 3)
         set(value) = editor.putInt(RESIZE_MODE, value).apply()
 
     var speedMode: Float
