@@ -25,18 +25,21 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <!-- LIVE TV 1 VIP -->
+            <!-- Tombol sumber (dropdown) -->
             <TextView
-                android:id="@+id/tv_header_title"
+                android:id="@+id/tv_source_selector"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="LIVE TV 1 VIP"
+                android:text="Live TV 1"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:padding="8dp"
                 android:background="@drawable/bg_header_title"
+                android:clickable="true"
+                android:focusable="true"
+                android:drawableEnd="@drawable/ic_arrow_drop_down"
                 android:layout_marginEnd="8dp" />
 
             <!-- Jam dan tanggal -->
