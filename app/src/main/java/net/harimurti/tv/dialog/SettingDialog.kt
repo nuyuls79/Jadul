@@ -1,31 +1,28 @@
 package net.harimurti.tv.dialog
 
 import android.app.Dialog
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatDialog
 import androidx.fragment.app.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import net.harimurti.tv.MainActivity
 import net.harimurti.tv.R
 import net.harimurti.tv.databinding.SettingDialogBinding
-import net.harimurti.tv.extension.setFullScreenFlags
 import net.harimurti.tv.extra.Preferences
 
 class SettingDialog : DialogFragment() {
     val preferences = Preferences()
-    private val tabFragment = arrayOf(SettingSourcesFragment(), SettingAppFragment(), SettingAboutFragment())
-    private val tabTitle = arrayOf(R.string.tab_sources, R.string.tab_app, R.string.tab_about)
-    private var revertCountryId = ""
+    // Hanya dua tab: App dan About
+    private val tabFragment = arrayOf(SettingAppFragment(), SettingAboutFragment())
+    private val tabTitle = arrayOf(R.string.tab_app, R.string.tab_about)
     private var isCancelled = true
 
     companion object {
-        var isSourcesChanged = false
+        // Tidak perlu isSourcesChanged karena sumber tidak diedit di dialog
     }
 
     @Suppress("DEPRECATION")
@@ -55,8 +52,7 @@ class SettingDialog : DialogFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val binding = SettingDialogBinding.inflate(inflater, container, false)
 
-        // init
-        isSourcesChanged = false
+        // Inisialisasi nilai dari Preferences untuk fragment App
         SettingAppFragment.launchAtBoot = preferences.launchAtBoot
         SettingAppFragment.playLastWatched = preferences.playLastWatched
         SettingAppFragment.sortFavorite = preferences.sortFavorite
@@ -64,22 +60,22 @@ class SettingDialog : DialogFragment() {
         SettingAppFragment.sortChannel = preferences.sortChannel
         SettingAppFragment.optimizePrebuffer = preferences.optimizePrebuffer
         SettingAppFragment.reverseNavigation = preferences.reverseNavigation
-        SettingSourcesFragment.sources = preferences.sources
-        revertCountryId = preferences.countryId
 
-        // view pager
+        // Tidak ada inisialisasi untuk SettingSourcesFragment
+
+        // ViewPager dengan adapter dua tab
         binding.settingViewPager.adapter = FragmentAdapter(childFragmentManager)
-        // tab layout
+        // TabLayout
         binding.settingTabLayout.setupWithViewPager(binding.settingViewPager)
-        // button cancel
+        // Tombol Cancel
         binding.settingCancelButton.apply {
             setOnClickListener { dismiss() }
         }
-        // button ok
+        // Tombol OK
         binding.settingOkButton.apply {
             setOnClickListener {
                 isCancelled = false
-                // setting app
+                // Simpan pengaturan dari AppFragment
                 preferences.launchAtBoot = SettingAppFragment.launchAtBoot
                 preferences.playLastWatched = SettingAppFragment.playLastWatched
                 preferences.sortFavorite = SettingAppFragment.sortFavorite
@@ -87,13 +83,7 @@ class SettingDialog : DialogFragment() {
                 preferences.sortChannel = SettingAppFragment.sortChannel
                 preferences.optimizePrebuffer = SettingAppFragment.optimizePrebuffer
                 preferences.reverseNavigation = SettingAppFragment.reverseNavigation
-                // playlist sources
-                val sources = SettingSourcesFragment.sources
-                if (sources?.filter { s -> s.active }?.size == 0) {
-                    sources[0].active = true
-                    Toast.makeText(context, R.string.warning_none_source_active, Toast.LENGTH_SHORT).show()
-                }
-                preferences.sources = sources
+                // Tidak ada penyimpanan sumber karena tab dihapus
                 dismiss()
             }
         }
@@ -103,13 +93,7 @@ class SettingDialog : DialogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        if (isCancelled) preferences.countryId = revertCountryId
-        else if (isSourcesChanged) sendUpdatePlaylist(requireContext())
-    }
-
-    private fun sendUpdatePlaylist(context: Context) {
-        LocalBroadcastManager.getInstance(context).sendBroadcast(
-            Intent(MainActivity.MAIN_CALLBACK)
-                .putExtra(MainActivity.MAIN_CALLBACK, MainActivity.UPDATE_PLAYLIST))
+        // Tidak perlu broadcast karena sumber tidak berubah
+        // Tidak ada pembatalan countryId karena tidak ada tab sumber
     }
 }
