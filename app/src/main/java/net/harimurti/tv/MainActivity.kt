@@ -31,13 +31,13 @@ class MainActivity : AppCompatActivity() {
     private var currentCategory: Category? = null
     private var isDataLoaded = false
 
-    // Untuk jam real-time
+    // Jam real-time
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private var handler: Handler? = null
     private var runnable: Runnable? = null
 
-    // Untuk pemilihan sumber playlist
+    // Pemilihan sumber
     private var currentSourceIndex = 0
     private var sourceList: ArrayList<Source> = arrayListOf()
 
@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inisialisasi daftar sumber dari preferences
+        // Ambil daftar sumber dari Preferences
         sourceList = preferences.sources ?: arrayListOf()
         if (sourceList.isEmpty()) {
             Toast.makeText(this, "Tidak ada sumber playlist", Toast.LENGTH_SHORT).show()
@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Tentukan indeks sumber aktif
+        // Tentukan indeks aktif
         currentSourceIndex = sourceList.indexOfFirst { it.active }
         if (currentSourceIndex < 0) {
             currentSourceIndex = 0
@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         // Setup tombol pemilih sumber
         setupSourceSelector()
 
-        // Tombol-tombol lainnya
+        // Tombol lainnya
         binding.buttonSearch.setOnClickListener { openSearch() }
         binding.buttonRefresh.setOnClickListener { updatePlaylist(false) }
         binding.buttonSettings.setOnClickListener { openSettings() }
@@ -99,21 +99,20 @@ class MainActivity : AppCompatActivity() {
         setupAdapter()
         startClock()
 
-        // Muat playlist dari sumber yang aktif
+        // Muat playlist dari sumber aktif
         loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
     override fun onResume() {
         super.onResume()
         startClock()
-        // Mungkin ada perubahan sumber dari dialog? Reload sourceList
+        // Sinkronisasi sumber (misal ada perubahan dari dialog)
         val newList = preferences.sources ?: arrayListOf()
         if (newList != sourceList) {
             sourceList = newList
             currentSourceIndex = sourceList.indexOfFirst { it.active }
             if (currentSourceIndex < 0) currentSourceIndex = 0
             updateSourceDisplay()
-            // Jangan reload otomatis, biarkan manual
         }
     }
 
@@ -223,12 +222,13 @@ class MainActivity : AppCompatActivity() {
             categoryAdapter.notifyDataSetChanged()
             binding.rvCategory.scrollToPosition(currentCategoryPosition)
             binding.rvCategory.requestLayout()
+            // Trik untuk memaksa layout
             binding.rvCategory.visibility = View.INVISIBLE
             binding.rvCategory.visibility = View.VISIBLE
         }
     }
 
-    // ================== Bagian Pemilih Sumber ==================
+    // ====================== Bagian Pemilih Sumber ======================
 
     private fun setupSourceSelector() {
         updateSourceDisplay()
@@ -259,16 +259,13 @@ class MainActivity : AppCompatActivity() {
         popup.setOnMenuItemClickListener { item ->
             val index = item.itemId
             if (index != currentSourceIndex) {
-                // Update status aktif di sourceList
+                // Update status aktif
                 sourceList.forEachIndexed { i, src ->
                     src.active = (i == index)
                 }
-                // Simpan perubahan ke preferences
                 preferences.sources = sourceList
-                // Update indeks dan tampilan
                 currentSourceIndex = index
                 updateSourceDisplay()
-                // Muat playlist dari sumber baru
                 loadPlaylistFromSource(sourceList[index])
             }
             true
@@ -277,13 +274,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadPlaylistFromSource(source: Source) {
-        // Tampilkan loading
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
 
         val playlistSet = Playlist()
-        // Buat daftar berisi hanya satu sumber yang dipilih
         val singleSourceList = arrayListOf(source)
 
         SourcesReader().set(singleSourceList, object: SourcesReader.Result {
@@ -291,7 +286,6 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     binding.loading.visibility = View.GONE
                     Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_SHORT).show()
-                    // Jika gagal, mungkin kembali ke cache atau sumber sebelumnya
                     if (!Playlist.cached.isCategoriesEmpty()) {
                         setPlaylistToAdapter(Playlist.cached)
                     }
@@ -305,13 +299,10 @@ class MainActivity : AppCompatActivity() {
                     setPlaylistToAdapter(playlistSet)
                 }
             }
-        }).process(true) // gunakan cache jika ada?
+        }).process(true)
     }
 
-    // ================== Fungsi yang sudah ada ==================
-
     private fun updatePlaylist(useCache: Boolean) {
-        // Panggil load dengan sumber saat ini
         loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
