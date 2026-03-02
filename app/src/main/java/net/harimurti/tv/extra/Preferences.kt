@@ -38,7 +38,7 @@ class Preferences {
 
         // Dua URL playlist default (ganti sesuai kebutuhan)
         const val DEFAULT_PLAYLIST_URL_1 = "https://bit.ly/KPL203"
-        const val DEFAULT_PLAYLIST_URL_2 = "https://bit.ly/KPL204" // Ganti dengan URL kedua yang sebenarnya
+        const val DEFAULT_PLAYLIST_URL_2 = "https://waduk.diskon.cloud/utama/multiplay.php" // Ganti dengan URL kedua yang sebenarnya
     }
 
     var isFirstTime: Boolean
