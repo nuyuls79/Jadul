@@ -3,7 +3,6 @@
     <string name="app_name" translatable="false">Nonton TV</string>
     <string name="website" translatable="false">https://github.com/hariimurti/NontonTV</string>
     <string name="telegram_group" translatable="false">https://t.me/paijemdev</string>
-    <string name="iptv_playlist" translatable="false">https://bit.ly/KPL203</string>
     <string name="json_release" translatable="false">https://github.com/hariimurti/NontonTV/raw/master/json/release.json</string>
     <!-- PERBAIKAN: positional arguments untuk 3 parameter -->
     <string name="apk_release" translatable="false" formatted="false">https://github.com/hariimurti/NontonTV/releases/download/%1$s/net.harimurti.tv_%2$s_b%3$d.apk</string>
