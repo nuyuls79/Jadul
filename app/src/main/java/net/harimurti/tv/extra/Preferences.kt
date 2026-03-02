@@ -38,7 +38,7 @@ class Preferences {
 
         // Dua URL playlist default (ganti sesuai kebutuhan)
         const val DEFAULT_PLAYLIST_URL_1 = "https://bit.ly/KPL203"
-        const val DEFAULT_PLAYLIST_URL_2 = "https://bit.ly/KPL203"
+        const val DEFAULT_PLAYLIST_URL_2 = "https://bit.ly/KPL204" // Ganti dengan URL kedua yang sebenarnya
     }
 
     var isFirstTime: Boolean
@@ -102,11 +102,13 @@ class Preferences {
             }
             try {
                 val json = preferences.getString(SOURCES_PLAYLIST, null)
-                if (json.isNullOrBlank()) throw Exception("no playlist sources in preference")
-                val list = Gson().fromJson(json, Array<Source>::class.java)
-                if (list == null || list.isEmpty()) throw Exception("cannot parse sources?")
-                list.forEach {
-                    if (it.path.isLinkUrl() || it.path.isPathExist()) result.add(it)
+                if (!json.isNullOrBlank()) {
+                    val list = Gson().fromJson(json, Array<Source>::class.java)
+                    if (list != null && list.isNotEmpty()) {
+                        list.forEach {
+                            if (it.path.isLinkUrl() || it.path.isPathExist()) result.add(it)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -115,8 +117,11 @@ class Preferences {
                 result.add(default1)
                 result.add(default2)
             }
+            // Pastikan setidaknya satu aktif
             val active = result.filter { it.active }
-            if (active.isEmpty()) result.first().active = true
+            if (active.isEmpty()) {
+                result.first().active = true
+            }
             return result
         }
         set(value) {
