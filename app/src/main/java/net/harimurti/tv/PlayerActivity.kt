@@ -106,59 +106,50 @@ class PlayerActivity : AppCompatActivity() {
         bindingControl = CustomControlBinding.bind(bindingRoot.root.findViewById(R.id.custom_control))
         setContentView(bindingRoot.root)
 
-        // set this is not first time
         isFirst = false
 
-        // verify playlist
         if (Playlist.cached.isCategoriesEmpty()) {
             Log.e("PLAYER", getString(R.string.player_no_playlist))
             Toast.makeText(this, R.string.player_no_playlist, Toast.LENGTH_SHORT).show()
-            this.finish()
+            finish()
             return
         }
 
-        // get categories & channel to play
         try {
             val parcel: PlayData? = intent.getParcelableExtra(PlayData.VALUE)
-            category = parcel.let { Playlist.cached.categories[it?.catId as Int] }
-            current = parcel.let { category?.channels?.get(it?.chId as Int) }
-        }
-        catch (e: Exception) {
+            category = parcel?.let { Playlist.cached.categories[it.catId] }
+            current = parcel?.let { category?.channels?.get(it.chId) }
+        } catch (e: Exception) {
             Log.e("PLAYER", getString(R.string.player_playdata_error))
             Toast.makeText(this, R.string.player_playdata_error, Toast.LENGTH_SHORT).show()
-            this.finish()
+            finish()
             return
         }
 
-        // verify
         if (category == null || current == null) {
             Log.e("PLAYER", getString(R.string.player_no_channel))
             Toast.makeText(this, R.string.player_no_channel, Toast.LENGTH_SHORT).show()
-            this.finish()
+            finish()
             return
         }
 
-        // set listener
         bindingListener()
-
-        // play the channel
         playChannel()
-
-        // Setup daftar channel horizontal
         setupChannelList()
 
-        // local broadcast receiver to update playlist
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastReceiver, IntentFilter(PLAYER_CALLBACK))
 
-        // Mulai jam
         startClock()
     }
 
     // ====================== Bagian Daftar Channel Horizontal ======================
 
-    inner class ChannelListAdapter(private val channels: List<Channel>) :
-        RecyclerView.Adapter<ChannelListAdapter.ViewHolder>() {
+    class ChannelListAdapter(
+        private val channels: List<Channel>,
+        private val currentChannel: Channel?,
+        private val onItemClick: (Channel) -> Unit
+    ) : RecyclerView.Adapter<ChannelListAdapter.ViewHolder>() {
 
         class ViewHolder(itemView: TextView) : RecyclerView.ViewHolder(itemView) {
             val textView: TextView = itemView
@@ -173,18 +164,9 @@ class PlayerActivity : AppCompatActivity() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val channel = channels[position]
             holder.textView.text = channel.name
-            holder.textView.isSelected = (channel == current)
+            holder.textView.isSelected = (channel == currentChannel)
             holder.textView.setOnClickListener {
-                val newIndex = position
-                if (newIndex != category?.channels?.indexOf(current)) {
-                    current = channel
-                    errorCounter = 0
-                    player?.playWhenReady = false
-                    player?.release()
-                    playChannel()
-                    channelAdapter.notifyDataSetChanged()
-                    toggleChannelList(false)
-                }
+                onItemClick(channel)
             }
         }
 
@@ -198,15 +180,42 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun setupChannelList() {
         val channels = category?.channels ?: return
-        channelAdapter = ChannelListAdapter(channels)
+        channelAdapter = ChannelListAdapter(channels, current) { channel ->
+            if (channel != current) {
+                current = channel
+                errorCounter = 0
+                player?.playWhenReady = false
+                player?.release()
+                playChannel()
+                // Update adapter dengan current yang baru
+                updateChannelListAdapter()
+                toggleChannelList(false)
+            }
+        }
         bindingControl.rvChannelList.adapter = channelAdapter
         bindingControl.rvChannelList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
         bindingControl.buttonInfo.setOnClickListener {
             // Refresh adapter jika kategori berubah
-            channelAdapter = ChannelListAdapter(category?.channels ?: return@setOnClickListener)
-            bindingControl.rvChannelList.adapter = channelAdapter
+            updateChannelListAdapter()
             toggleChannelList(!isChannelListVisible)
+        }
+    }
+
+    private fun updateChannelListAdapter() {
+        category?.channels?.let { channels ->
+            channelAdapter = ChannelListAdapter(channels, current) { channel ->
+                if (channel != current) {
+                    current = channel
+                    errorCounter = 0
+                    player?.playWhenReady = false
+                    player?.release()
+                    playChannel()
+                    updateChannelListAdapter()
+                    toggleChannelList(false)
+                }
+            }
+            bindingControl.rvChannelList.adapter = channelAdapter
         }
     }
 
@@ -385,7 +394,6 @@ class PlayerActivity : AppCompatActivity() {
         }
         bindingControl.layoutSeekbar.visibility = visibility
         bindingControl.spacerControl.visibility = visibility
-        // override visibility if not seekable
         if (player?.isCurrentWindowSeekable == false) visibility = View.GONE
         bindingControl.buttonRewind.visibility = visibility
         bindingControl.buttonForward.visibility = visibility
@@ -408,20 +416,15 @@ class PlayerActivity : AppCompatActivity() {
 
     @Suppress("DEPRECATION")
     private fun playChannel() {
-        // reset view
         switchLiveOrVideo(true)
-
-        // set category & channel name
         bindingRoot.categoryName.text = category?.name?.trim()
         bindingRoot.channelName.text = current?.name?.trim()
 
-        // create mediaitem
         val userAgent = current?.userAgent ?: "NontonTV/${BuildConfig.VERSION_NAME} (Android ${Build.VERSION.RELEASE})"
         val referer = current?.referer.toString()
         val streamUrl = current?.streamUrl?.decodeUrl()
         val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
 
-        // create some factory
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
             .setUserAgent(userAgent)
@@ -433,7 +436,6 @@ class PlayerActivity : AppCompatActivity() {
             current?.drmId?.equals(it.id) == true
         }
 
-        // create mediaSource with/without drm factory
         if (drmLicense != null && drmLicense.type.toUUID() != C.UUID_NIL) {
             val uuid = drmLicense.type.toUUID()
             val drmCallback = if (drmLicense.key.isLinkUrl()) HttpMediaDrmCallback(drmLicense.key, httpDataSourceFactory)
@@ -449,12 +451,10 @@ class PlayerActivity : AppCompatActivity() {
         }
         else mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
 
-        // create trackselector
         trackSelector = DefaultTrackSelector(this).apply {
             parameters = ParametersBuilder(applicationContext).build()
         }
 
-        // optimize prebuffer
         val loadControl: LoadControl = DefaultLoadControl.Builder()
             .setAllocator(DefaultAllocator(true, 16))
             .setBufferDurationsMs(
@@ -465,27 +465,22 @@ class PlayerActivity : AppCompatActivity() {
             .setTargetBufferBytes(-1)
             .setPrioritizeTimeOverSizeThresholds(true).build()
 
-        // enable extension renderer
         val renderersFactory = DefaultRenderersFactory(this)
             .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
-        // set player builder
         val playerBuilder = SimpleExoPlayer.Builder(this, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
             .setTrackSelector(trackSelector)
         if (preferences.optimizePrebuffer)
             playerBuilder.setLoadControl(loadControl)
 
-        // create player & set listener
         player = playerBuilder.build()
         player?.addListener(PlayerListener())
 
-        // set player view
         bindingRoot.playerView.player = player
         bindingRoot.playerView.resizeMode = preferences.resizeMode
         bindingRoot.playerView.requestFocus()
 
-        // play mediasouce
         player?.playWhenReady = true
         player?.setMediaSource(mediaSource)
         player?.prepare()
@@ -497,7 +492,6 @@ class PlayerActivity : AppCompatActivity() {
         if (isLocked) return true
         switchChannel(mode, false)
         bindingRoot.playerView.hideController()
-        // Sembunyikan daftar channel saat berpindah
         if (isChannelListVisible) toggleChannelList(false)
         return true
     }
@@ -551,17 +545,11 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
 
-        // reset player & play
         errorCounter = 0
         player?.playWhenReady = false
         player?.release()
         playChannel()
-
-        // Perbarui adapter daftar channel dengan kategori baru
-        category?.channels?.let {
-            channelAdapter = ChannelListAdapter(it)
-            bindingControl.rvChannelList.adapter = channelAdapter
-        }
+        updateChannelListAdapter()
     }
 
     private fun retryPlayback(force: Boolean) {
@@ -604,7 +592,6 @@ class PlayerActivity : AppCompatActivity() {
 
         override fun onPlayerError(error: PlaybackException) {
             if (player?.playWhenReady == false) return
-            // if error more than 5 times, then show message dialog
             if (errorCounter < 5 && network.isConnected()) {
                 errorCounter++
                 Toast.makeText(applicationContext, error.errorCodeName, Toast.LENGTH_SHORT).show()
@@ -718,7 +705,6 @@ class PlayerActivity : AppCompatActivity() {
                 if(m.itemId == R.id.mode_back) showMenu(view) else showScreenMenu(view)
                 true
             }
-            //set check preference
             when(preferences.resizeMode) {
                 0 -> menu.findItem(R.id.mode_fit).isChecked = true
                 1 -> menu.findItem(R.id.mode_fixed_width).isChecked = true
@@ -730,7 +716,6 @@ class PlayerActivity : AppCompatActivity() {
                 bindingRoot.playerView.controllerShowTimeoutMs = timeout
             }
         }
-        //force show icon
         try {
             val popup = PopupMenu::class.java.getDeclaredField("mPopup")
             popup.isAccessible = true
@@ -768,10 +753,9 @@ class PlayerActivity : AppCompatActivity() {
                     showSpeedMenu(view)
                 }
 
-                if(m.itemId == R.id.speed_back) showMenu(view)// else showSpeedMenu(view)
+                if(m.itemId == R.id.speed_back) showMenu(view)
                 true
             }
-            //set check preference
             when(preferences.speedMode) {
                 0.25F -> menu.findItem(R.id.speed_0_25).isChecked = true
                 0.5F -> menu.findItem(R.id.speed_0_50).isChecked = true
@@ -786,7 +770,6 @@ class PlayerActivity : AppCompatActivity() {
                 bindingRoot.playerView.controllerShowTimeoutMs = timeout
             }
         }
-        //force show icon
         try {
             val popup = PopupMenu::class.java.getDeclaredField("mPopup")
             popup.isAccessible = true
@@ -814,7 +797,6 @@ class PlayerActivity : AppCompatActivity() {
                     player?.volume = preferences.volume
                     isMute(bindingControl.buttonVolume)
                 }
-
                 override fun onStartTrackingTouch(seekBar: SeekBar) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar) {}
             })
