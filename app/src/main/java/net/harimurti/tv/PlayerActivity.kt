@@ -24,16 +24,24 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
-import com.google.android.exoplayer2.source.TrackGroupArray
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.ParametersBuilder
-import com.google.android.exoplayer2.trackselection.MappingTrackSelector.MappedTrackInfo
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray
-import com.google.android.exoplayer2.upstream.DefaultAllocator
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import androidx.media3.common.*
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.HttpDataSource
+import androidx.media3.exoplayer.*
+import androidx.media3.exoplayer.dash.DashMediaSource
+import androidx.media3.exoplayer.drm.*
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.rtsp.RtspMediaSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.trackselection.MappingTrackSelector.MappedTrackInfo
+import androidx.media3.exoplayer.upstream.DefaultAllocator
+import androidx.media3.exoplayer.upstream.DefaultLoadControl
+import androidx.media3.ui.PlayerView
 import net.harimurti.tv.databinding.ActivityPlayerBinding
 import net.harimurti.tv.databinding.CustomControlBinding
 import net.harimurti.tv.dialog.TrackSelectionDialog
@@ -46,11 +54,8 @@ import net.harimurti.tv.model.Playlist
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.ceil
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.drm.*
-import com.google.android.exoplayer2.source.MediaSource
 
+@UnstableApi
 class PlayerActivity : AppCompatActivity() {
     private var doubleBackToExitPressedOnce = false
     private var isTelevision = UiMode().isTelevision()
@@ -58,7 +63,7 @@ class PlayerActivity : AppCompatActivity() {
     private val network = Network()
     private var category: Category? = null
     private var current: Channel? = null
-    private var player: SimpleExoPlayer? = null
+    private var player: ExoPlayer? = null
     private lateinit var mediaSource: MediaSource
     private lateinit var trackSelector: DefaultTrackSelector
     private var lastSeenTrackGroupArray: TrackGroupArray? = null
@@ -187,7 +192,6 @@ class PlayerActivity : AppCompatActivity() {
                 player?.playWhenReady = false
                 player?.release()
                 playChannel()
-                // Update adapter dengan current yang baru
                 updateChannelListAdapter()
                 toggleChannelList(false)
             }
@@ -196,7 +200,6 @@ class PlayerActivity : AppCompatActivity() {
         bindingControl.rvChannelList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
         bindingControl.buttonInfo.setOnClickListener {
-            // Refresh adapter jika kategori berubah
             updateChannelListAdapter()
             toggleChannelList(!isChannelListVisible)
         }
@@ -258,7 +261,7 @@ class PlayerActivity : AppCompatActivity() {
                 }
             })
             setControllerVisibilityListener {
-                setChannelInformation (it == View.VISIBLE)
+                setChannelInformation(it == View.VISIBLE)
             }
         }
         bindingControl.trackSelection.setOnClickListener { showTrackSelector() }
@@ -292,7 +295,7 @@ class PlayerActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun doubleTapLeft(clicks: Int) {
-        if(player?.isCurrentWindowLive == false) {
+        if(player?.isCurrentWindowLive() == false) {
             bindingRoot.seekBack.text = "- ${timeToString((clicks * 10).toDouble())}"
             bindingRoot.seekBack.alpha = 1f
             val seekAnimation = AlphaAnimation(0f, 1f)
@@ -303,7 +306,7 @@ class PlayerActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun doubleTapRight(clicks: Int) {
-        if(player?.isCurrentWindowLive == false) {
+        if(player?.isCurrentWindowLive() == false) {
             bindingRoot.seekForward.text = "+ ${timeToString((clicks * 10).toDouble())}"
             bindingRoot.seekForward.alpha = 1f
             val seekAnimation = AlphaAnimation(0f, 1f)
@@ -313,7 +316,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun doubleTapFinish(clicks: Int, isLeft:Boolean) {
-        if(player?.isCurrentWindowLive == false) {
+        if(player?.isCurrentWindowLive() == false) {
             val click = if (isLeft) clicks * -1 else clicks
             val seekAnimation = AlphaAnimation(1f, 0f)
             seekAnimation.duration = 1800
@@ -389,19 +392,20 @@ class PlayerActivity : AppCompatActivity() {
         var visibility = when {
             reset -> View.GONE
             isLocked -> View.INVISIBLE
-            player?.isCurrentWindowLive == true -> View.GONE
+            player?.isCurrentWindowLive() == true -> View.GONE
             else -> View.VISIBLE
         }
         bindingControl.layoutSeekbar.visibility = visibility
         bindingControl.spacerControl.visibility = visibility
-        if (player?.isCurrentWindowSeekable == false) visibility = View.GONE
+        if (player?.isCurrentWindowSeekable() == false) visibility = View.GONE
         bindingControl.buttonRewind.visibility = visibility
         bindingControl.buttonForward.visibility = visibility
     }
 
     private fun isDeviceSupportDrm(type: String): Boolean {
         val message = String.format(getString(R.string.device_not_support_drm), type.uppercase())
-        if (FrameworkMediaDrm.isCryptoSchemeSupported(type.toUUID())) return true
+        val uuid = UUID.fromString(type)
+        if (FrameworkMediaDrm.isCryptoSchemeSupported(uuid)) return true
         AlertDialog.Builder(this).apply {
             setTitle(R.string.player_playback_error)
             setMessage(message)
@@ -413,6 +417,124 @@ class PlayerActivity : AppCompatActivity() {
         }
         return false
     }
+
+    // ====================== Multi-key DRM Helpers ======================
+
+    private fun createDrmSessionManager(
+        drmLicense: DrmLicense,
+        httpDataSourceFactory: HttpDataSource.Factory
+    ): DrmSessionManager {
+        val uuid = UUID.fromString(drmLicense.type) // misal ClearKey UUID: 1077efec-c0b2-4d02-ace3-3c1e52e2fb4b
+
+        val drmCallback = if (drmLicense.key.startsWith("http")) {
+            HttpMediaDrmCallback(drmLicense.key, httpDataSourceFactory)
+        } else {
+            // Parse multi-key: format "kid1:key1,kid2:key2"
+            val keyPairs = drmLicense.key.split(",").map { it.split(":") }
+            val keys = keyPairs.map { (kid, key) ->
+                val kidBytes = hexToByteArray(kid)
+                val keyBytes = hexToByteArray(key)
+                Pair(kidBytes, keyBytes)
+            }
+            val keySetData = createKeySetData(keys)
+            LocalMediaDrmCallback(keySetData)
+        }
+
+        return DefaultDrmSessionManager.Builder()
+            .setUuidAndExoMediaDrmProvider(uuid, FrameworkMediaDrm.DEFAULT_PROVIDER)
+            .build(drmCallback)
+    }
+
+    private fun hexToByteArray(hex: String): ByteArray {
+        return hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    }
+
+    private fun createKeySetData(keys: List<Pair<ByteArray, ByteArray>>): ByteArray {
+        // Format JSON: {"keys":[{"kty":"oct","k":"base64key","kid":"base64kid"}]}
+        val json = buildJsonObject {
+            addJsonArray("keys") {
+                keys.forEach { (kid, key) ->
+                    addJsonObject {
+                        add("kty", "oct")
+                        add("k", base64Encode(key))
+                        add("kid", base64Encode(kid))
+                    }
+                }
+            }
+        }
+        return json.toByteArray()
+    }
+
+    private fun base64Encode(bytes: ByteArray): String {
+        return android.util.Base64.encodeToString(bytes, android.util.Base64.NO_PADDING or android.util.Base64.URL_SAFE)
+    }
+
+    // Helper JSON sederhana (bisa diganti dengan Gson atau kotlinx.serialization)
+    private fun buildJsonObject(block: JsonObjectBuilder.() -> Unit): String {
+        val builder = JsonObjectBuilder()
+        builder.block()
+        return builder.toString()
+    }
+
+    class JsonObjectBuilder {
+        private val map = mutableMapOf<String, Any>()
+        fun add(key: String, value: String) { map[key] = value }
+        fun addJsonArray(key: String, block: JsonArrayBuilder.() -> Unit) {
+            val arrayBuilder = JsonArrayBuilder()
+            arrayBuilder.block()
+            map[key] = arrayBuilder.build()
+        }
+        override fun toString(): String {
+            return buildJsonString(map)
+        }
+    }
+
+    class JsonArrayBuilder {
+        private val list = mutableListOf<Any>()
+        fun addJsonObject(block: JsonObjectBuilder.() -> Unit) {
+            val objBuilder = JsonObjectBuilder()
+            objBuilder.block()
+            list.add(objBuilder.map)
+        }
+        fun build(): List<Any> = list
+    }
+
+    private fun buildJsonString(obj: Any): String {
+        return when (obj) {
+            is Map<*, *> -> {
+                val entries = obj.entries.joinToString(",") { (k, v) ->
+                    "\"$k\":${buildJsonString(v!!)}"
+                }
+                "{$entries}"
+            }
+            is List<*> -> {
+                val items = obj.joinToString(",") { buildJsonString(it!!) }
+                "[$items]"
+            }
+            is String -> "\"$obj\""
+            else -> obj.toString()
+        }
+    }
+
+    // ====================== RenderersFactory dengan Mode Decoder ======================
+
+    private fun createRenderersFactory(): RenderersFactory {
+        return DefaultRenderersFactory(this).apply {
+            when (preferences.decoderMode) {
+                1 -> { // SW: paksa software decoding
+                    setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
+                }
+                2 -> { // HW+: prefer extension
+                    setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                }
+                else -> { // 0 = HW: gunakan hardware decoding jika tersedia
+                    setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                }
+            }
+        }
+    }
+
+    // ====================== Playback ======================
 
     @Suppress("DEPRECATION")
     private fun playChannel() {
@@ -429,30 +551,24 @@ class PlayerActivity : AppCompatActivity() {
             .setAllowCrossProtocolRedirects(true)
             .setUserAgent(userAgent)
         if (current?.referer != null)
-            httpDataSourceFactory.setDefaultRequestProperties(mapOf(Pair("referer", referer)))
-        val dataSourceFactory = DefaultDataSourceFactory(this, httpDataSourceFactory)
+            httpDataSourceFactory.setDefaultRequestProperties(mapOf("referer" to referer))
+        val dataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(this, httpDataSourceFactory)
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
         val drmLicense = Playlist.cached.drmLicenses.firstOrNull {
             current?.drmId?.equals(it.id) == true
         }
 
-        if (drmLicense != null && drmLicense.type.toUUID() != C.UUID_NIL) {
-            val uuid = drmLicense.type.toUUID()
-            val drmCallback = if (drmLicense.key.isLinkUrl()) HttpMediaDrmCallback(drmLicense.key, httpDataSourceFactory)
-                    else LocalMediaDrmCallback(drmLicense.key.toClearKey())
-            val drmSessionManager = DefaultDrmSessionManager.Builder()
-                    .setUuidAndExoMediaDrmProvider(uuid, FrameworkMediaDrm.DEFAULT_PROVIDER)
-                    .setMultiSession(uuid != C.CLEARKEY_UUID)
-                    .build(drmCallback)
+        if (drmLicense != null && UUID.fromString(drmLicense.type) != C.UUID_NIL) {
+            val drmSessionManager = createDrmSessionManager(drmLicense, httpDataSourceFactory)
             mediaSource = mediaSourceFactory.setDrmSessionManager(drmSessionManager)
-                    .createMediaSource(mediaItem)
-
+                .createMediaSource(mediaItem)
             if (!isDeviceSupportDrm(drmLicense.type)) return
+        } else {
+            mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
         }
-        else mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
 
         trackSelector = DefaultTrackSelector(this).apply {
-            parameters = ParametersBuilder(applicationContext).build()
+            parameters = parameters.buildUpon().build()
         }
 
         val loadControl: LoadControl = DefaultLoadControl.Builder()
@@ -465,10 +581,9 @@ class PlayerActivity : AppCompatActivity() {
             .setTargetBufferBytes(-1)
             .setPrioritizeTimeOverSizeThresholds(true).build()
 
-        val renderersFactory = DefaultRenderersFactory(this)
-            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+        val renderersFactory = createRenderersFactory()
 
-        val playerBuilder = SimpleExoPlayer.Builder(this, renderersFactory)
+        val playerBuilder = ExoPlayer.Builder(this, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
             .setTrackSelector(trackSelector)
         if (preferences.optimizePrebuffer)
@@ -837,8 +952,8 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    override fun onPictureInPictureModeChanged(pip: Boolean, config: Configuration) {
-        super.onPictureInPictureModeChanged(pip, config)
+    override fun onPictureInPictureModeChanged(pip: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(pip, newConfig)
         isPipMode = pip
         setChannelInformation(!pip)
         bindingRoot.playerView.useController = !pip
@@ -869,7 +984,7 @@ class PlayerActivity : AppCompatActivity() {
                 return true
             }
         }
-        if (player?.isCurrentWindowLive == false) {
+        if (player?.isCurrentWindowLive() == false) {
             when(keyCode) {
                 KeyEvent.KEYCODE_MEDIA_REWIND -> { player?.seekBack(); return true }
                 KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> { player?.seekForward(); return true }
