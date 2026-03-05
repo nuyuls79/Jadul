@@ -35,6 +35,7 @@ class Preferences {
         private const val VOLUME_CONTROL = "VOLUME_CONTROL"
         private const val SOURCES_PLAYLIST = "SOURCES_PLAYLIST"
         private const val COUNTRY_ID = "COUNTRY_ID"
+        private const val DECODER_MODE = "DECODER_MODE" // Tambahan untuk mode decoder
 
         // Dua URL playlist default (ganti sesuai kebutuhan)
         const val DEFAULT_PLAYLIST_URL_1 = "https://bit.ly/KPL203"
@@ -144,4 +145,9 @@ class Preferences {
     var volume: Float
         get() = preferences.getFloat(VOLUME_CONTROL, 1F)
         set(value) = editor.putFloat(VOLUME_CONTROL, value).apply()
+
+    // Mode decoder: 0=HW, 1=SW, 2=HW+
+    var decoderMode: Int
+        get() = preferences.getInt(DECODER_MODE, 0)
+        set(value) = editor.putInt(DECODER_MODE, value).apply()
 }
