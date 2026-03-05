@@ -18,9 +18,12 @@ import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.source.TrackGroupArray
@@ -69,6 +72,10 @@ class PlayerActivity : AppCompatActivity() {
     private var timeHandler: Handler? = null
     private var timeRunnable: Runnable? = null
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+
+    // Untuk daftar channel horizontal
+    private lateinit var channelAdapter: ChannelListAdapter
+    private var isChannelListVisible = false
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
@@ -137,6 +144,9 @@ class PlayerActivity : AppCompatActivity() {
         // play the channel
         playChannel()
 
+        // Setup daftar channel horizontal
+        setupChannelList()
+
         // local broadcast receiver to update playlist
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastReceiver, IntentFilter(PLAYER_CALLBACK))
@@ -144,6 +154,63 @@ class PlayerActivity : AppCompatActivity() {
         // Mulai jam
         startClock()
     }
+
+    // ====================== Bagian Daftar Channel Horizontal ======================
+
+    inner class ChannelListAdapter(private val channels: List<Channel>) :
+        RecyclerView.Adapter<ChannelListAdapter.ViewHolder>() {
+
+        class ViewHolder(itemView: TextView) : RecyclerView.ViewHolder(itemView) {
+            val textView: TextView = itemView
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val textView = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_channel_horizontal, parent, false) as TextView
+            return ViewHolder(textView)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val channel = channels[position]
+            holder.textView.text = channel.name
+            holder.textView.isSelected = (channel == current)
+            holder.textView.setOnClickListener {
+                val newIndex = position
+                if (newIndex != category?.channels?.indexOf(current)) {
+                    current = channel
+                    errorCounter = 0
+                    player?.playWhenReady = false
+                    player?.release()
+                    playChannel()
+                    channelAdapter.notifyDataSetChanged()
+                    toggleChannelList(false)
+                }
+            }
+        }
+
+        override fun getItemCount(): Int = channels.size
+    }
+
+    private fun toggleChannelList(show: Boolean) {
+        isChannelListVisible = show
+        bindingControl.rvChannelList.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    private fun setupChannelList() {
+        val channels = category?.channels ?: return
+        channelAdapter = ChannelListAdapter(channels)
+        bindingControl.rvChannelList.adapter = channelAdapter
+        bindingControl.rvChannelList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+
+        bindingControl.buttonInfo.setOnClickListener {
+            // Refresh adapter jika kategori berubah
+            channelAdapter = ChannelListAdapter(category?.channels ?: return@setOnClickListener)
+            bindingControl.rvChannelList.adapter = channelAdapter
+            toggleChannelList(!isChannelListVisible)
+        }
+    }
+
+    // ====================== Akhir Bagian Daftar Channel ======================
 
     private fun startClock() {
         timeHandler = Handler(Looper.getMainLooper())
@@ -430,6 +497,8 @@ class PlayerActivity : AppCompatActivity() {
         if (isLocked) return true
         switchChannel(mode, false)
         bindingRoot.playerView.hideController()
+        // Sembunyikan daftar channel saat berpindah
+        if (isChannelListVisible) toggleChannelList(false)
         return true
     }
 
@@ -487,6 +556,12 @@ class PlayerActivity : AppCompatActivity() {
         player?.playWhenReady = false
         player?.release()
         playChannel()
+
+        // Perbarui adapter daftar channel dengan kategori baru
+        category?.channels?.let {
+            channelAdapter = ChannelListAdapter(it)
+            bindingControl.rvChannelList.adapter = channelAdapter
+        }
     }
 
     private fun retryPlayback(force: Boolean) {
