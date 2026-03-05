@@ -40,6 +40,7 @@ import net.harimurti.tv.model.Category
 import net.harimurti.tv.model.Channel
 import net.harimurti.tv.model.PlayData
 import net.harimurti.tv.model.Playlist
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.ceil
 import com.google.android.exoplayer2.PlaybackParameters
@@ -63,6 +64,11 @@ class PlayerActivity : AppCompatActivity() {
     private var handlerInfo: Handler? = null
     private var errorCounter = 0
     private var isLocked = false
+
+    // Untuk jam real-time
+    private var timeHandler: Handler? = null
+    private var timeRunnable: Runnable? = null
+    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
@@ -134,6 +140,32 @@ class PlayerActivity : AppCompatActivity() {
         // local broadcast receiver to update playlist
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastReceiver, IntentFilter(PLAYER_CALLBACK))
+
+        // Mulai jam
+        startClock()
+    }
+
+    private fun startClock() {
+        timeHandler = Handler(Looper.getMainLooper())
+        timeRunnable = object : Runnable {
+            override fun run() {
+                updateTime()
+                timeHandler?.postDelayed(this, 1000)
+            }
+        }
+        timeHandler?.post(timeRunnable!!)
+    }
+
+    private fun stopClock() {
+        timeHandler?.removeCallbacks(timeRunnable!!)
+        timeHandler = null
+        timeRunnable = null
+    }
+
+    private fun updateTime() {
+        val now = Date()
+        val timeStr = timeFormat.format(now)
+        bindingRoot.tvPlayerTime.text = timeStr
     }
 
     private fun bindingListener() {
@@ -724,11 +756,13 @@ class PlayerActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         player?.playWhenReady = true
+        startClock()
     }
 
     override fun onPause() {
         super.onPause()
         player?.playWhenReady = false
+        stopClock()
     }
 
     @Suppress("DEPRECATION")
@@ -818,6 +852,7 @@ class PlayerActivity : AppCompatActivity() {
         player?.release()
         LocalBroadcastManager.getInstance(this)
             .unregisterReceiver(broadcastReceiver)
+        stopClock()
         super.onDestroy()
     }
 }
