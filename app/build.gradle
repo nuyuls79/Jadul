@@ -69,14 +69,16 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.12.13'
     implementation 'com.google.code.gson:gson:2.8.6'
     
-    // ExoPlayer
-    implementation 'com.google.android.exoplayer:exoplayer:2.15.1'
-    implementation 'com.google.android.exoplayer:exoplayer-rtsp:2.15.1'
-    implementation('com.google.android.exoplayer:extension-rtmp:2.15.1') {
-        exclude group: 'net.butterflytv.utils', module: 'rtmp-client'
-    }
+    // ExoPlayer (lama) HAPUS SEMUA, ganti dengan Media3
+    implementation "androidx.media3:media3-exoplayer:1.4.1"
+    implementation "androidx.media3:media3-exoplayer-rtsp:1.4.1"
+    implementation "androidx.media3:media3-ui:1.4.1"
+    implementation "androidx.media3:media3-exoplayer-hls:1.4.1"
+    implementation "androidx.media3:media3-exoplayer-dash:1.4.1"
+    // Tambahkan decoder ffmpeg jika diperlukan (untuk SW decoding)
+    implementation "androidx.media3:media3-decoder-ffmpeg:1.4.1"
     
-    // RTMP
+    // RTMP client (masih diperlukan jika ada channel RTMP)
     implementation 'io.antmedia:rtmp-client:3.2.0'
     
     // Google Services
@@ -88,7 +90,7 @@ dependencies {
     implementation 'com.facebook.shimmer:shimmer:0.5.0'
     implementation 'com.h6ah4i.android.widget.verticalseekbar:verticalseekbar:1.0.0'
     
-    // Glide untuk loading logo channel
+    // Glide
     implementation 'com.github.bumptech.glide:glide:4.12.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.12.0'
     
