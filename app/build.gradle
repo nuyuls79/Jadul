@@ -76,7 +76,7 @@ dependencies {
     implementation "androidx.media3:media3-exoplayer-hls:1.4.1"
     implementation "androidx.media3:media3-exoplayer-dash:1.4.1"
     // Tambahkan decoder ffmpeg jika diperlukan (untuk SW decoding)
-    implementation "androidx.media3:media3-decoder-ffmpeg:1.4.1"
+  //  implementation "androidx.media3:media3-decoder-ffmpeg:1.4.1"
     
     // RTMP client (masih diperlukan jika ada channel RTMP)
     implementation 'io.antmedia:rtmp-client:3.2.0'
