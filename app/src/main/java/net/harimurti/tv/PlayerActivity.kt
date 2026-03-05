@@ -287,7 +287,6 @@ class PlayerActivity : AppCompatActivity() {
         isMute(bindingControl.buttonVolume)
     }
 
-    // ... (sisanya double tap, seek, dll. Saya akan sertakan yang penting)
     @SuppressLint("SetTextI18n")
     private fun doubleTapLeft(clicks: Int) {
         if(player?.isCurrentWindowLive == false) {
@@ -388,12 +387,12 @@ class PlayerActivity : AppCompatActivity() {
         bindingControl.buttonForward.visibility = visibility
     }
 
-    // ====================== DRM Multi-Key ======================
+    // ====================== DRM Multi-Key (ExoPlayer 2.15.1) ======================
 
     private fun createDrmSessionManager(
         drmLicense: DrmLicense,
-        httpDataSourceFactory: HttpDataSource.Factory
-    ): DrmSessionManager<FrameworkMediaCrypto> {
+        httpDataSourceFactory: DefaultHttpDataSource.Factory
+    ): DrmSessionManager {
         val uuid = UUID.fromString(drmLicense.type) // ClearKey: 1077efec-c0b2-4d02-ace3-3c1e52e2fb4b
 
         val drmCallback = if (drmLicense.key.startsWith("http")) {
@@ -419,7 +418,6 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun createKeySetData(keys: List<Pair<ByteArray, ByteArray>>): ByteArray {
-        // Format: {"keys":[{"kty":"oct","k":"base64key","kid":"base64kid"}]}
         val json = buildJsonObject {
             addJsonArray("keys") {
                 keys.forEach { (kid, key) ->
@@ -437,7 +435,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun base64Encode(bytes: ByteArray): String =
         android.util.Base64.encodeToString(bytes, android.util.Base64.NO_PADDING or android.util.Base64.URL_SAFE)
 
-    // JSON helper sederhana
+    // Helper JSON sederhana
     private fun buildJsonObject(block: JsonObjectBuilder.() -> Unit): String {
         val builder = JsonObjectBuilder()
         builder.block()
@@ -570,8 +568,6 @@ class PlayerActivity : AppCompatActivity() {
         player?.playbackParameters = PlaybackParameters(preferences.speedMode)
         player?.volume = preferences.volume
     }
-
-    // ====================== Channel Switching ======================
 
     private fun switchChannel(mode: Int): Boolean {
         if (isLocked) return true
@@ -902,8 +898,8 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    override fun onPictureInPictureModeChanged(pip: Boolean, config: Configuration) {
-        super.onPictureInPictureModeChanged(pip, config)
+    override fun onPictureInPictureModeChanged(pip: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(pip, newConfig)
         isPipMode = pip
         setChannelInformation(!pip)
         bindingRoot.playerView.useController = !pip
