@@ -65,20 +65,20 @@ class PlayerActivity : AppCompatActivity() {
     private var errorCounter = 0
     private var isLocked = false
 
-    // Jam real-time
     private var timeHandler: Handler? = null
     private var timeRunnable: Runnable? = null
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
-    // Daftar channel horizontal
     private lateinit var channelAdapter: ChannelListAdapter
     private var isChannelListVisible = false
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent) {
-            when(intent.getStringExtra(PLAYER_CALLBACK)) {
-                RETRY_PLAYBACK -> retryPlayback(true)
-                CLOSE_PLAYER -> finish()
+            val callback = intent.getStringExtra(PLAYER_CALLBACK)
+            if (callback == RETRY_PLAYBACK) {
+                retryPlayback(true)
+            } else if (callback == CLOSE_PLAYER) {
+                finish()
             }
         }
     }
@@ -106,7 +106,6 @@ class PlayerActivity : AppCompatActivity() {
         isFirst = false
 
         if (Playlist.cached.isCategoriesEmpty()) {
-            Log.e("PLAYER", getString(R.string.player_no_playlist))
             Toast.makeText(this, R.string.player_no_playlist, Toast.LENGTH_SHORT).show()
             finish()
             return
@@ -114,17 +113,17 @@ class PlayerActivity : AppCompatActivity() {
 
         try {
             val parcel: PlayData? = intent.getParcelableExtra(PlayData.VALUE)
-            category = parcel?.let { Playlist.cached.categories[it.catId] }
-            current = parcel?.let { category?.channels?.get(it.chId) }
+            if (parcel != null) {
+                category = Playlist.cached.categories[parcel.catId]
+                current = category?.channels?.get(parcel.chId)
+            }
         } catch (e: Exception) {
-            Log.e("PLAYER", getString(R.string.player_playdata_error))
             Toast.makeText(this, R.string.player_playdata_error, Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
         if (category == null || current == null) {
-            Log.e("PLAYER", getString(R.string.player_no_channel))
             Toast.makeText(this, R.string.player_no_channel, Toast.LENGTH_SHORT).show()
             finish()
             return
@@ -145,7 +144,7 @@ class PlayerActivity : AppCompatActivity() {
     class ChannelListAdapter(
         private val channels: List<Channel>,
         private val currentChannel: Channel?,
-        private val onItemClick: (Channel) -> Unit
+        private val activity: PlayerActivity
     ) : RecyclerView.Adapter<ChannelListAdapter.ViewHolder>() {
 
         class ViewHolder(itemView: TextView) : RecyclerView.ViewHolder(itemView) {
@@ -162,12 +161,26 @@ class PlayerActivity : AppCompatActivity() {
             val channel = channels[position]
             holder.textView.text = channel.name
             holder.textView.isSelected = (channel == currentChannel)
-            holder.textView.setOnClickListener {
-                onItemClick(channel)
-            }
+            holder.textView.setOnClickListener(object : View.OnClickListener {
+                override fun onClick(v: View?) {
+                    activity.onChannelClicked(channel)
+                }
+            })
         }
 
         override fun getItemCount(): Int = channels.size
+    }
+
+    private fun onChannelClicked(channel: Channel) {
+        if (channel != current) {
+            current = channel
+            errorCounter = 0
+            player?.playWhenReady = false
+            player?.release()
+            playChannel()
+            updateChannelListAdapter()
+            toggleChannelList(false)
+        }
     }
 
     private fun toggleChannelList(show: Boolean) {
@@ -177,39 +190,21 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun setupChannelList() {
         val channels = category?.channels ?: return
-        channelAdapter = ChannelListAdapter(channels, current) { channel ->
-            if (channel != current) {
-                current = channel
-                errorCounter = 0
-                player?.playWhenReady = false
-                player?.release()
-                playChannel()
-                updateChannelListAdapter()
-                toggleChannelList(false)
-            }
-        }
+        channelAdapter = ChannelListAdapter(channels, current, this)
         bindingControl.rvChannelList.adapter = channelAdapter
         bindingControl.rvChannelList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
-        bindingControl.buttonInfo.setOnClickListener {
-            updateChannelListAdapter()
-            toggleChannelList(!isChannelListVisible)
-        }
+        bindingControl.buttonInfo.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) {
+                updateChannelListAdapter()
+                toggleChannelList(!isChannelListVisible)
+            }
+        })
     }
 
     private fun updateChannelListAdapter() {
         category?.channels?.let { channels ->
-            channelAdapter = ChannelListAdapter(channels, current) { channel ->
-                if (channel != current) {
-                    current = channel
-                    errorCounter = 0
-                    player?.playWhenReady = false
-                    player?.release()
-                    playChannel()
-                    updateChannelListAdapter()
-                    toggleChannelList(false)
-                }
-            }
+            channelAdapter = ChannelListAdapter(channels, current, this)
             bindingControl.rvChannelList.adapter = channelAdapter
         }
     }
@@ -229,14 +224,11 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun stopClock() {
         timeHandler?.removeCallbacks(timeRunnable!!)
-        timeHandler = null
-        timeRunnable = null
     }
 
     private fun updateTime() {
         val now = Date()
-        val timeStr = timeFormat.format(now)
-        bindingRoot.tvPlayerTime.text = timeStr
+        bindingRoot.tvPlayerTime.text = timeFormat.format(now)
     }
 
     // ====================== Binding Listener ======================
@@ -254,36 +246,67 @@ class PlayerActivity : AppCompatActivity() {
                     doubleTapFinish(click, isLeft)
                 }
             })
-            setControllerVisibilityListener {
-                setChannelInformation(it == View.VISIBLE)
-            }
+            setControllerVisibilityListener(object : PlayerControlView.VisibilityListener {
+                override fun onVisibilityChange(visibility: Int) {
+                    setChannelInformation(visibility == View.VISIBLE)
+                }
+            })
         }
-        bindingControl.trackSelection.setOnClickListener { showTrackSelector() }
+        
+        bindingControl.trackSelection.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) { showTrackSelector() }
+        })
+
         bindingControl.buttonExit.apply {
             visibility = if (isTelevision) View.GONE else View.VISIBLE
-            setOnClickListener { finish() }
+            setOnClickListener(object : View.OnClickListener {
+                override fun onClick(v: View?) { finish() }
+            })
         }
-        bindingControl.buttonPrevious.setOnClickListener { switchChannel(CHANNEL_PREVIOUS) }
-        bindingControl.buttonRewind.setOnClickListener { player?.seekBack() }
-        bindingControl.buttonForward.setOnClickListener { player?.seekForward() }
-        bindingControl.buttonNext.setOnClickListener { switchChannel(CHANNEL_NEXT) }
-        bindingControl.screenMode.setOnClickListener { showMenu(it) }
-        bindingControl.trackSelection.setOnClickListener { showTrackSelector() }
+
+        bindingControl.buttonPrevious.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) { switchChannel(CHANNEL_PREVIOUS) }
+        })
+
+        bindingControl.buttonRewind.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) { player?.seekBack() }
+        })
+
+        bindingControl.buttonForward.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) { player?.seekForward() }
+        })
+
+        bindingControl.buttonNext.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) { switchChannel(CHANNEL_NEXT) }
+        })
+
+        bindingControl.screenMode.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) { if (v != null) showMenu(v) }
+        })
+
         bindingControl.buttonLock.apply {
             visibility = if (isTelevision) View.GONE else View.VISIBLE
-            setOnClickListener {
-                if (!isLocked) {
-                    (it as ImageButton).setImageResource(R.drawable.ic_lock)
-                    lockControl(true)
+            setOnClickListener(object : View.OnClickListener {
+                override fun onClick(v: View?) {
+                    if (!isLocked) {
+                        (v as ImageButton).setImageResource(R.drawable.ic_lock)
+                        lockControl(true)
+                    }
                 }
-            }
-            setOnLongClickListener {
-                val resId = if (isLocked) R.drawable.ic_lock_open else R.drawable.ic_lock
-                (it as ImageButton).setImageResource(resId)
-                lockControl(!isLocked); true
-            }
+            })
+            setOnLongClickListener(object : View.OnLongClickListener {
+                override fun onLongClick(v: View?): Boolean {
+                    val resId = if (isLocked) R.drawable.ic_lock_open else R.drawable.ic_lock
+                    (v as ImageButton).setImageResource(resId)
+                    lockControl(!isLocked)
+                    return true
+                }
+            })
         }
-        bindingControl.buttonVolume.setOnClickListener { showVolumeMenu() }
+
+        bindingControl.buttonVolume.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) { showVolumeMenu() }
+        })
         isMute(bindingControl.buttonVolume)
     }
 
@@ -322,7 +345,9 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun seekTime(time: Long) {
-        player?.seekTo(maxOf(minOf(player?.currentPosition?.plus(time)!!, player?.duration!!), 0))
+        val currentPos = player?.currentPosition ?: 0L
+        val duration = player?.duration ?: 0L
+        player?.seekTo(maxOf(minOf(currentPos + time, duration), 0L))
     }
 
     private fun timeToString(time: Double): String {
@@ -353,12 +378,12 @@ class PlayerActivity : AppCompatActivity() {
 
         if (handlerInfo == null) handlerInfo = Handler(Looper.getMainLooper())
         handlerInfo?.removeCallbacksAndMessages(null)
-        handlerInfo?.postDelayed({
-                if (bindingRoot.playerView.isControllerVisible) return@postDelayed
+        handlerInfo?.postDelayed(object : Runnable {
+            override fun run() {
+                if (bindingRoot.playerView.isControllerVisible) return
                 bindingRoot.layoutInfo.visibility = View.INVISIBLE
-            },
-            bindingRoot.playerView.controllerShowTimeoutMs.toLong()
-        )
+            }
+        }, bindingRoot.playerView.controllerShowTimeoutMs.toLong())
     }
 
     private fun lockControl(setLocked: Boolean) {
@@ -393,7 +418,7 @@ class PlayerActivity : AppCompatActivity() {
         drmLicense: DrmLicense,
         httpDataSourceFactory: DefaultHttpDataSource.Factory
     ): DrmSessionManager {
-        val uuid = UUID.fromString(drmLicense.type) // ClearKey: 1077efec-c0b2-4d02-ace3-3c1e52e2fb4b
+        val uuid = UUID.fromString(drmLicense.type)
 
         val drmCallback = if (drmLicense.key.startsWith("http")) {
             HttpMediaDrmCallback(drmLicense.key, httpDataSourceFactory)
@@ -410,6 +435,7 @@ class PlayerActivity : AppCompatActivity() {
 
         return DefaultDrmSessionManager.Builder()
             .setUuidAndExoMediaDrmProvider(uuid, FrameworkMediaDrm.DEFAULT_PROVIDER)
+            .setMultiSession(true) // PERBAIKAN: Aktifkan Multi-key Support
             .build(drmCallback)
     }
 
@@ -418,36 +444,45 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun createKeySetData(keys: List<Pair<ByteArray, ByteArray>>): ByteArray {
-        val json = buildJsonObject {
-            addJsonArray("keys") {
-                keys.forEach { (kid, key) ->
-                    addJsonObject {
-                        add("kty", "oct")
-                        add("k", base64Encode(key))
-                        add("kid", base64Encode(kid))
+        val json = buildJsonObject(object : JsonObjectAction {
+            override fun execute(builder: JsonObjectBuilder) {
+                builder.addJsonArray("keys", object : JsonArrayAction {
+                    override fun execute(arrayBuilder: JsonArrayBuilder) {
+                        keys.forEach { (kid, key) ->
+                            arrayBuilder.addJsonObject(object : JsonObjectAction {
+                                override fun execute(objBuilder: JsonObjectBuilder) {
+                                    objBuilder.add("kty", "oct")
+                                    objBuilder.add("k", base64Encode(key))
+                                    objBuilder.add("kid", base64Encode(kid))
+                                }
+                            })
+                        }
                     }
-                }
+                })
             }
-        }
+        })
         return json.toByteArray()
     }
 
     private fun base64Encode(bytes: ByteArray): String =
         android.util.Base64.encodeToString(bytes, android.util.Base64.NO_PADDING or android.util.Base64.URL_SAFE)
 
-    // Helper JSON sederhana
-    private fun buildJsonObject(block: JsonObjectBuilder.() -> Unit): String {
+    // Helper JSON sederhana (Tanpa Lambda)
+    interface JsonObjectAction { fun execute(builder: JsonObjectBuilder) }
+    interface JsonArrayAction { fun execute(arrayBuilder: JsonArrayBuilder) }
+
+    private fun buildJsonObject(action: JsonObjectAction): String {
         val builder = JsonObjectBuilder()
-        builder.block()
+        action.execute(builder)
         return builder.toString()
     }
 
     class JsonObjectBuilder {
         private val map = mutableMapOf<String, Any>()
         fun add(key: String, value: String) { map[key] = value }
-        fun addJsonArray(key: String, block: JsonArrayBuilder.() -> Unit) {
+        fun addJsonArray(key: String, action: JsonArrayAction) {
             val arrayBuilder = JsonArrayBuilder()
-            arrayBuilder.block()
+            action.execute(arrayBuilder)
             map[key] = arrayBuilder.build()
         }
         override fun toString(): String = buildJsonString(map)
@@ -455,12 +490,18 @@ class PlayerActivity : AppCompatActivity() {
 
     class JsonArrayBuilder {
         private val list = mutableListOf<Any>()
-        fun addJsonObject(block: JsonObjectBuilder.() -> Unit) {
+        fun addJsonObject(action: JsonObjectAction) {
             val objBuilder = JsonObjectBuilder()
-            objBuilder.block()
-            list.add(objBuilder.map)
+            action.execute(objBuilder)
+            list.add(objBuilder.getMap())
         }
         fun build(): List<Any> = list
+    }
+
+    fun JsonObjectBuilder.getMap(): Map<String, Any> {
+        val field = this.javaClass.getDeclaredField("map")
+        field.isAccessible = true
+        return field.get(this) as Map<String, Any>
     }
 
     private fun buildJsonString(obj: Any): String = when (obj) {
@@ -485,24 +526,30 @@ class PlayerActivity : AppCompatActivity() {
             setTitle(R.string.player_playback_error)
             setMessage(message)
             setCancelable(false)
-            setPositiveButton(getString(R.string.btn_next_channel)) { _, _ -> switchChannel(CHANNEL_NEXT) }
-            setNegativeButton(R.string.btn_close) { _, _ -> finish() }
-            create()
-            show()
+            setPositiveButton(getString(R.string.btn_next_channel), object : DialogInterface.OnClickListener {
+                override fun onClick(di: DialogInterface?, i: Int) { switchChannel(CHANNEL_NEXT) }
+            })
+            setNegativeButton(R.string.btn_close, object : DialogInterface.OnClickListener {
+                override fun onClick(di: DialogInterface?, i: Int) { finish() }
+            })
+            create().show()
         }
         return false
     }
 
-    // ====================== RenderersFactory dengan Mode Decoder ======================
+    // ====================== RenderersFactory (Hardware Preference) ======================
 
     private fun createRenderersFactory(): RenderersFactory {
-        return DefaultRenderersFactory(this).apply {
-            when (preferences.decoderMode) {
-                1 -> setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF) // SW
-                2 -> setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER) // HW+
-                else -> setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON) // HW
-            }
+        val factory = DefaultRenderersFactory(this)
+        // PERBAIKAN: Logika pemilihan Decoder Perangkat Keras
+        // Mode 1: Software Only (Extension On)
+        // Mode 2: Hardware Preferred (Extension Off)
+        when (preferences.decoderMode) {
+            1 -> factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+            2 -> factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
+            else -> factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
         }
+        return factory
     }
 
     // ====================== Playback ======================
@@ -523,6 +570,7 @@ class PlayerActivity : AppCompatActivity() {
             .setUserAgent(userAgent)
         if (current?.referer != null)
             httpDataSourceFactory.setDefaultRequestProperties(mapOf("referer" to referer))
+            
         val dataSourceFactory = DefaultDataSourceFactory(this, httpDataSourceFactory)
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
         val drmLicense = Playlist.cached.drmLicenses.firstOrNull {
@@ -538,9 +586,8 @@ class PlayerActivity : AppCompatActivity() {
             mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
         }
 
-        trackSelector = DefaultTrackSelector(this).apply {
-            parameters = DefaultTrackSelector.Parameters.Builder(this@PlayerActivity).build()
-        }
+        trackSelector = DefaultTrackSelector(this)
+        trackSelector.parameters = DefaultTrackSelector.Parameters.Builder(this).build()
 
         val loadControl = DefaultLoadControl.Builder()
             .setAllocator(DefaultAllocator(true, 16))
@@ -552,6 +599,7 @@ class PlayerActivity : AppCompatActivity() {
         val playerBuilder = SimpleExoPlayer.Builder(this, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
             .setTrackSelector(trackSelector)
+            
         if (preferences.optimizePrebuffer)
             playerBuilder.setLoadControl(loadControl)
 
@@ -562,9 +610,9 @@ class PlayerActivity : AppCompatActivity() {
         bindingRoot.playerView.resizeMode = preferences.resizeMode
         bindingRoot.playerView.requestFocus()
 
-        player?.playWhenReady = true
         player?.setMediaSource(mediaSource)
         player?.prepare()
+        player?.playWhenReady = true
         player?.playbackParameters = PlaybackParameters(preferences.speedMode)
         player?.volume = preferences.volume
     }
@@ -613,7 +661,7 @@ class PlayerActivity : AppCompatActivity() {
             }
             CHANNEL_NEXT -> {
                 val next = chId + 1
-                if (next < category?.channels?.size ?: 0) {
+                if (next < (category?.channels?.size ?: 0)) {
                     current = category?.channels?.get(next)
                 } else {
                     switchChannel(CATEGORY_DOWN)
@@ -647,16 +695,14 @@ class PlayerActivity : AppCompatActivity() {
         override fun onPlaybackStateChanged(state: Int) {
             val trackHaveContent = TrackSelectionDialog.willHaveContent(trackSelector)
             bindingControl.trackSelection.visibility = if (trackHaveContent) View.VISIBLE else View.GONE
-            when (state) {
-                Player.STATE_READY -> {
-                    errorCounter = 0
-                    val catId = Playlist.cached.categories.indexOf(category)
-                    val chId = category?.channels?.indexOf(current) as Int
-                    preferences.watched = PlayData(catId, chId)
-                    switchLiveOrVideo()
-                }
-                Player.STATE_ENDED -> retryPlayback(true)
-                else -> { }
+            if (state == Player.STATE_READY) {
+                errorCounter = 0
+                val catId = Playlist.cached.categories.indexOf(category)
+                val chId = category?.channels?.indexOf(current) as Int
+                preferences.watched = PlayData(catId, chId)
+                switchLiveOrVideo()
+            } else if (state == Player.STATE_ENDED) {
+                retryPlayback(true)
             }
         }
 
@@ -668,13 +714,11 @@ class PlayerActivity : AppCompatActivity() {
             if (player?.playWhenReady == false) return
             if (errorCounter < 5 && network.isConnected()) {
                 errorCounter++
-                Toast.makeText(applicationContext, error.getMessage(), Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, error.message, Toast.LENGTH_SHORT).show()
                 retryPlayback(false)
             } else {
-                showMessage(
-                    String.format(getString(R.string.player_error_message),
-                        error.type, error.getCause()?.message ?: "", error.message ?: ""), true
-                )
+                showMessage(String.format(getString(R.string.player_error_message),
+                        error.type, error.cause?.message ?: "", error.message ?: ""), true)
             }
         }
 
@@ -703,25 +747,33 @@ class PlayerActivity : AppCompatActivity() {
         val countdown = AsyncSleep()
         val waitInSecond = 30
         val btnRetryText = if (autoretry) String.format(getString(R.string.btn_retry_count), waitInSecond) else getString(R.string.btn_retry)
-        val builder = AlertDialog.Builder(this).apply {
-            setTitle(R.string.player_playback_error)
-            setMessage(message)
-            setCancelable(false)
-            setNegativeButton(getString(R.string.btn_next_channel)) { di,_ ->
+        
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.player_playback_error)
+        builder.setMessage(message)
+        builder.setCancelable(false)
+        builder.setNegativeButton(getString(R.string.btn_next_channel), object : DialogInterface.OnClickListener {
+            override fun onClick(di: DialogInterface?, i: Int) {
                 switchChannel(CHANNEL_NEXT)
-                di.dismiss()
+                di?.dismiss()
             }
-            setPositiveButton(btnRetryText) { di,_ ->
+        })
+        builder.setPositiveButton(btnRetryText, object : DialogInterface.OnClickListener {
+            override fun onClick(di: DialogInterface?, i: Int) {
                 retryPlayback(true)
-                di.dismiss()
+                di?.dismiss()
             }
-            setNeutralButton(R.string.btn_close) { di,_ ->
-                di.dismiss()
+        })
+        builder.setNeutralButton(R.string.btn_close, object : DialogInterface.OnClickListener {
+            override fun onClick(di: DialogInterface?, i: Int) {
+                di?.dismiss()
                 finish()
             }
-            setOnDismissListener { countdown.stop() }
-            create()
-        }
+        })
+        builder.setOnDismissListener(object : DialogInterface.OnDismissListener {
+            override fun onDismiss(di: DialogInterface?) { countdown.stop() }
+        })
+        
         val dialog = builder.show()
 
         if (!autoretry) return
@@ -741,32 +793,37 @@ class PlayerActivity : AppCompatActivity() {
     // ====================== Menu ======================
 
     private fun showTrackSelector(): Boolean {
-        TrackSelectionDialog.createForTrackSelector(trackSelector) { }
-            .show(supportFragmentManager, null)
+        val dialog = TrackSelectionDialog.createForTrackSelector(trackSelector, object : DialogInterface.OnDismissListener {
+            override fun onDismiss(dialog: DialogInterface?) {}
+        })
+        dialog.show(supportFragmentManager, null)
         return true
     }
 
     private fun showMenu(view: View) {
-        PopupMenu(this, view).apply {
-            inflate(R.menu.setting_mode)
-            setOnMenuItemClickListener { m ->
-                when (m.itemId) {
-                    R.id.speed_mode -> showSpeedMenu(view)
-                    else -> showScreenMenu(view)
+        val popup = PopupMenu(this, view)
+        popup.inflate(R.menu.setting_mode)
+        popup.setOnMenuItemClickListener(object : PopupMenu.OnMenuItemClickListener {
+            override fun onMenuItemClick(item: MenuItem): Boolean {
+                if (item.itemId == R.id.speed_mode) {
+                    showSpeedMenu(view)
+                } else {
+                    showScreenMenu(view)
                 }
-                true
+                return true
             }
-            show()
-        }
+        })
+        popup.show()
     }
 
     private fun showScreenMenu(view: View) {
         val timeout = bindingRoot.playerView.controllerShowTimeoutMs
         bindingRoot.playerView.controllerShowTimeoutMs = 0
-        val popupMenu = PopupMenu(this, view).apply {
-            inflate(R.menu.screen_resize_mode)
-            setOnMenuItemClickListener { m ->
-                val mode = when (m.itemId) {
+        val popupMenu = PopupMenu(this, view)
+        popupMenu.inflate(R.menu.screen_resize_mode)
+        popupMenu.setOnMenuItemClickListener(object : PopupMenu.OnMenuItemClickListener {
+            override fun onMenuItemClick(item: MenuItem): Boolean {
+                val mode = when (item.itemId) {
                     R.id.mode_fit -> 0
                     R.id.mode_fixed_width -> 1
                     R.id.mode_fixed_height -> 2
@@ -778,37 +835,35 @@ class PlayerActivity : AppCompatActivity() {
                     bindingRoot.playerView.resizeMode = mode
                     preferences.resizeMode = mode
                 }
-                if (m.itemId == R.id.mode_back) showMenu(view) else showScreenMenu(view)
-                true
+                if (item.itemId == R.id.mode_back) showMenu(view) else showScreenMenu(view)
+                return true
             }
-            when (preferences.resizeMode) {
-                0 -> menu.findItem(R.id.mode_fit).isChecked = true
-                1 -> menu.findItem(R.id.mode_fixed_width).isChecked = true
-                2 -> menu.findItem(R.id.mode_fixed_height).isChecked = true
-                3 -> menu.findItem(R.id.mode_fill).isChecked = true
-                4 -> menu.findItem(R.id.mode_zoom).isChecked = true
+        })
+        
+        when (preferences.resizeMode) {
+            0 -> popupMenu.menu.findItem(R.id.mode_fit).isChecked = true
+            1 -> popupMenu.menu.findItem(R.id.mode_fixed_width).isChecked = true
+            2 -> popupMenu.menu.findItem(R.id.mode_fixed_height).isChecked = true
+            3 -> popupMenu.menu.findItem(R.id.mode_fill).isChecked = true
+            4 -> popupMenu.menu.findItem(R.id.mode_zoom).isChecked = true
+        }
+        
+        popupMenu.setOnDismissListener(object : PopupMenu.OnDismissListener {
+            override fun onDismiss(menu: PopupMenu?) {
+                bindingRoot.playerView.controllerShowTimeoutMs = timeout
             }
-            setOnDismissListener { bindingRoot.playerView.controllerShowTimeoutMs = timeout }
-        }
-        try {
-            val popup = PopupMenu::class.java.getDeclaredField("mPopup")
-            popup.isAccessible = true
-            val menu = popup.get(popupMenu)
-            menu.javaClass.getDeclaredMethod("setForceShowIcon", Boolean::class.java).invoke(menu, true)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            popupMenu.show()
-        }
+        })
+        popupMenu.show()
     }
 
     private fun showSpeedMenu(view: View) {
         val timeout = bindingRoot.playerView.controllerShowTimeoutMs
         bindingRoot.playerView.controllerShowTimeoutMs = 0
-        val popupMenu = PopupMenu(this, view).apply {
-            inflate(R.menu.playback_speed_mode)
-            setOnMenuItemClickListener { m ->
-                val speed = when (m.itemId) {
+        val popupMenu = PopupMenu(this, view)
+        popupMenu.inflate(R.menu.playback_speed_mode)
+        popupMenu.setOnMenuItemClickListener(object : PopupMenu.OnMenuItemClickListener {
+            override fun onMenuItemClick(item: MenuItem): Boolean {
+                val speed = when (item.itemId) {
                     R.id.speed_0_25 -> 0.25f
                     R.id.speed_0_50 -> 0.5f
                     R.id.speed_0_75 -> 0.75f
@@ -824,48 +879,43 @@ class PlayerActivity : AppCompatActivity() {
                     preferences.speedMode = speed
                     showSpeedMenu(view)
                 }
-                if (m.itemId == R.id.speed_back) showMenu(view)
-                true
+                if (item.itemId == R.id.speed_back) showMenu(view)
+                return true
             }
-            when (preferences.speedMode) {
-                0.25f -> menu.findItem(R.id.speed_0_25).isChecked = true
-                0.5f -> menu.findItem(R.id.speed_0_50).isChecked = true
-                0.75f -> menu.findItem(R.id.speed_0_75).isChecked = true
-                1f -> menu.findItem(R.id.speed_1_00).isChecked = true
-                1.25f -> menu.findItem(R.id.speed_1_25).isChecked = true
-                1.5f -> menu.findItem(R.id.speed_1_50).isChecked = true
-                1.75f -> menu.findItem(R.id.speed_1_75).isChecked = true
-                2f -> menu.findItem(R.id.speed_2_00).isChecked = true
+        })
+
+        val currentSpeed = preferences.speedMode
+        val menu = popupMenu.menu
+        if (currentSpeed == 0.25f) menu.findItem(R.id.speed_0_25).isChecked = true
+        else if (currentSpeed == 0.5f) menu.findItem(R.id.speed_0_50).isChecked = true
+        else if (currentSpeed == 0.75f) menu.findItem(R.id.speed_0_75).isChecked = true
+        else if (currentSpeed == 1f) menu.findItem(R.id.speed_1_00).isChecked = true
+        else if (currentSpeed == 1.25f) menu.findItem(R.id.speed_1_25).isChecked = true
+        else if (currentSpeed == 1.5f) menu.findItem(R.id.speed_1_50).isChecked = true
+        else if (currentSpeed == 1.75f) menu.findItem(R.id.speed_1_75).isChecked = true
+        else if (currentSpeed == 2f) menu.findItem(R.id.speed_2_00).isChecked = true
+
+        popupMenu.setOnDismissListener(object : PopupMenu.OnDismissListener {
+            override fun onDismiss(menu: PopupMenu?) {
+                bindingRoot.playerView.controllerShowTimeoutMs = timeout
             }
-            setOnDismissListener { bindingRoot.playerView.controllerShowTimeoutMs = timeout }
-        }
-        try {
-            val popup = PopupMenu::class.java.getDeclaredField("mPopup")
-            popup.isAccessible = true
-            val menu = popup.get(popupMenu)
-            menu.javaClass.getDeclaredMethod("setForceShowIcon", Boolean::class.java).invoke(menu, true)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            popupMenu.show()
-        }
+        })
+        popupMenu.show()
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun showVolumeMenu() {
         bindingControl.volumeLayout.visibility = View.VISIBLE
-        bindingControl.volumeSeek.apply {
-            progress = (preferences.volume * 100).toInt()
-            setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                    preferences.volume = i.toFloat() / 100
-                    player?.volume = preferences.volume
-                    isMute(bindingControl.buttonVolume)
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar) {}
-            })
-        }
+        bindingControl.volumeSeek.progress = (preferences.volume * 100).toInt()
+        bindingControl.volumeSeek.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, i: Int, b: Boolean) {
+                preferences.volume = i.toFloat() / 100
+                player?.volume = preferences.volume
+                isMute(bindingControl.buttonVolume)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
     }
 
     private fun isMute(v: ImageButton) {
@@ -964,7 +1014,9 @@ class PlayerActivity : AppCompatActivity() {
         }
         doubleBackToExitPressedOnce = true
         Toast.makeText(this, getString(R.string.press_back_twice_exit_player), Toast.LENGTH_SHORT).show()
-        Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+        Handler(Looper.getMainLooper()).postDelayed(object : Runnable {
+            override fun run() { doubleBackToExitPressedOnce = false }
+        }, 2000)
     }
 
     override fun onDestroy() {
