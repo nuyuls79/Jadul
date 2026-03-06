@@ -1,12 +1,12 @@
-package com.fujitec.tv.adapter
+package net.harimurti.tv.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.fujitec.tv.R
-import com.fujitec.tv.model.Category
+import net.harimurti.tv.R
+import net.harimurti.tv.model.Category
 
 class CategoryAdapter(
     private val categories: ArrayList<Category> = ArrayList()
@@ -28,16 +28,13 @@ class CategoryAdapter(
     fun setSelectedPosition(position: Int) {
         val oldPosition = selectedPosition
         selectedPosition = position
-
         notifyItemChanged(oldPosition)
         notifyItemChanged(selectedPosition)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_category, parent, false)
-
         return ViewHolder(view)
     }
 
@@ -51,12 +48,7 @@ class CategoryAdapter(
 
         holder.txtCategory.text = category.name
 
-        // Selected state
-        if (position == selectedPosition) {
-            holder.itemView.isSelected = true
-        } else {
-            holder.itemView.isSelected = false
-        }
+        holder.itemView.isSelected = position == selectedPosition
 
         holder.itemView.setOnClickListener {
 
@@ -75,7 +67,6 @@ class CategoryAdapter(
         val txtCategory: TextView = itemView.findViewById(R.id.txtCategory)
 
         init {
-            // Penting untuk Android TV
             itemView.isFocusable = true
             itemView.isFocusableInTouchMode = true
         }
