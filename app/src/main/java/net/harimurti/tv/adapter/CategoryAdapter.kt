@@ -1,91 +1,83 @@
-package net.harimurti.tv.adapter
+package com.fujitec.tv.adapter
 
-import android.content.Context
-import android.graphics.Color
-import android.graphics.Typeface
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
-import androidx.databinding.DataBindingUtil
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import net.harimurti.tv.R
-import net.harimurti.tv.databinding.ItemCategoryBinding
-import net.harimurti.tv.model.Category
+import com.fujitec.tv.R
+import com.fujitec.tv.model.Category
 
-class CategoryAdapter(private val categories: ArrayList<Category>?) :
-    RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
+class CategoryAdapter(
+    private val categories: ArrayList<Category> = ArrayList()
+) : RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
-    private lateinit var context: Context
-    private var selectedPos = 0
-    private var onCategoryClickListener: ((Int) -> Unit)? = null
-
-    class ViewHolder(val binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        context = parent.context
-        val binding: ItemCategoryBinding = DataBindingUtil.inflate(
-            LayoutInflater.from(context), R.layout.item_category, parent, false
-        )
-        return ViewHolder(binding)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val dataObj = categories?.get(position) ?: return
-
-        holder.binding.textCategory.apply {
-            text = dataObj.name ?: ""
-
-            // Marquee untuk semua item
-            isSelected = true
-
-            // Background dan warna berdasarkan posisi terpilih
-            if (selectedPos == position) {
-                setBackgroundResource(R.drawable.bg_category_highlight)
-                setTextColor(Color.WHITE)
-                setTypeface(null, Typeface.BOLD)
-            } else {
-                setBackgroundResource(R.drawable.bg_category_default)
-                setTextColor(Color.LTGRAY)
-                setTypeface(null, Typeface.NORMAL)
-            }
-        }
-
-        holder.itemView.setOnClickListener {
-            if (selectedPos != holder.adapterPosition) {
-                val oldPos = selectedPos
-                selectedPos = holder.adapterPosition
-                notifyItemChanged(oldPos)
-                notifyItemChanged(selectedPos)
-                onCategoryClickListener?.invoke(selectedPos)
-            }
-        }
-    }
-
-    override fun getItemCount(): Int = categories?.size ?: 0
+    private var selectedPosition = 0
+    private var listener: ((Int) -> Unit)? = null
 
     fun setOnCategoryClickListener(listener: (Int) -> Unit) {
-        this.onCategoryClickListener = listener
+        this.listener = listener
+    }
+
+    fun updateData(newCategories: List<Category>) {
+        categories.clear()
+        categories.addAll(newCategories)
+        notifyDataSetChanged()
     }
 
     fun setSelectedPosition(position: Int) {
-        if (position != selectedPos && position < itemCount) {
-            val oldPos = selectedPos
-            selectedPos = position
-            notifyItemChanged(oldPos)
-            notifyItemChanged(selectedPos)
+        val oldPosition = selectedPosition
+        selectedPosition = position
+
+        notifyItemChanged(oldPosition)
+        notifyItemChanged(selectedPosition)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_category, parent, false)
+
+        return ViewHolder(view)
+    }
+
+    override fun getItemCount(): Int {
+        return categories.size
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+
+        val category = categories[position]
+
+        holder.txtCategory.text = category.name
+
+        // Selected state
+        if (position == selectedPosition) {
+            holder.itemView.isSelected = true
+        } else {
+            holder.itemView.isSelected = false
+        }
+
+        holder.itemView.setOnClickListener {
+
+            val oldPosition = selectedPosition
+            selectedPosition = holder.adapterPosition
+
+            notifyItemChanged(oldPosition)
+            notifyItemChanged(selectedPosition)
+
+            listener?.invoke(selectedPosition)
         }
     }
 
-    fun updateData(newCategories: ArrayList<Category>?) {
-        categories?.clear()
-        newCategories?.let { categories?.addAll(it) }
-        notifyDataSetChanged()
-    }
+    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-    fun insertOrUpdateFavorite() {
-        notifyDataSetChanged()
-    }
+        val txtCategory: TextView = itemView.findViewById(R.id.txtCategory)
 
-    fun removeFavorite() {
-        notifyDataSetChanged()
+        init {
+            // Penting untuk Android TV
+            itemView.isFocusable = true
+            itemView.isFocusableInTouchMode = true
+        }
     }
 }
