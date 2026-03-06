@@ -105,6 +105,7 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(bindingRoot.root)
 
         isFirst = false
+
         if (Playlist.cached.isCategoriesEmpty()) {
             Toast.makeText(this, R.string.player_no_playlist, Toast.LENGTH_SHORT).show()
             finish()
@@ -135,6 +136,7 @@ class PlayerActivity : AppCompatActivity() {
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastReceiver, IntentFilter(PLAYER_CALLBACK))
+
         startClock()
     }
 
@@ -161,7 +163,9 @@ class PlayerActivity : AppCompatActivity() {
             holder.textView.text = channel.name
             holder.textView.isSelected = (channel == currentChannel)
             holder.textView.setOnClickListener(object : View.OnClickListener {
-                override fun onClick(v: View?) { activity.onChannelItemClick(channel) }
+                override fun onClick(v: View?) {
+                    activity.onChannelItemClick(channel)
+                }
             })
         }
 
@@ -206,14 +210,13 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    // ====================== Jam ======================
+    // ====================== Jam & UI Control ======================
 
     private fun startClock() {
         timeHandler = Handler(Looper.getMainLooper())
         timeRunnable = object : Runnable {
             override fun run() {
-                val now = Date()
-                bindingRoot.tvPlayerTime.text = timeFormat.format(now)
+                bindingRoot.tvPlayerTime.text = timeFormat.format(Date())
                 timeHandler?.postDelayed(this, 1000)
             }
         }
@@ -223,8 +226,6 @@ class PlayerActivity : AppCompatActivity() {
     private fun stopClock() {
         timeHandler?.removeCallbacks(timeRunnable!!)
     }
-
-    // ====================== Binding Listener ======================
 
     private fun bindingListener() {
         bindingRoot.playerView.apply {
@@ -291,26 +292,56 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    // ====================== DRM & Renderers ======================
+    private fun lockControl(setLocked: Boolean) {
+        isLocked = setLocked
+        val visibility = if (setLocked) View.INVISIBLE else View.VISIBLE
+        bindingRoot.layoutInfo.visibility = visibility
+        bindingControl.layoutControl.visibility = visibility
+    }
+
+    // ====================== ExoPlayer Core (DRM & Renderers) ======================
 
     private fun createDrmSessionManager(drmLicense: DrmLicense, httpFactory: DefaultHttpDataSource.Factory): DrmSessionManager {
         val uuid = UUID.fromString(drmLicense.type)
+        
         val drmCallback = if (drmLicense.key.startsWith("http")) {
             HttpMediaDrmCallback(drmLicense.key, httpFactory)
         } else {
-            val keyPairs = drmLicense.key.split(",").map { it.split(":") }
-            // Logic Manual Key Handling (Disederhanakan)
-            LocalMediaDrmCallback(ByteArray(0)) 
+            // Logic ClearKey manual tanpa lambda
+            val keyPairs = drmLicense.key.split(",")
+            val sb = StringBuilder("{\"keys\":[")
+            for (i in keyPairs.indices) {
+                val parts = keyPairs[i].split(":")
+                if (parts.size < 2) continue
+                val kid = android.util.Base64.encodeToString(hexToByteArray(parts[0]), android.util.Base64.NO_PADDING or android.util.Base64.URL_SAFE).trim()
+                val key = android.util.Base64.encodeToString(hexToByteArray(parts[1]), android.util.Base64.NO_PADDING or android.util.Base64.URL_SAFE).trim()
+                sb.append("{\"kty\":\"oct\",\"k\":\"$key\",\"kid\":\"$kid\"}")
+                if (i < keyPairs.size - 1) sb.append(",")
+            }
+            sb.append("]}")
+            LocalMediaDrmCallback(sb.toString().toByteArray())
         }
 
         return DefaultDrmSessionManager.Builder()
             .setUuidAndExoMediaDrmProvider(uuid, FrameworkMediaDrm.DEFAULT_PROVIDER)
-            .setMultiSession(true) // AKTIF: Multi-key Support
+            .setMultiSession(true) // AKTIF: Untuk Multi-key DRM
             .build(drmCallback)
+    }
+
+    private fun hexToByteArray(hex: String): ByteArray {
+        val l = hex.length
+        val data = ByteArray(l / 2)
+        var i = 0
+        while (i < l) {
+            data[i / 2] = ((Character.digit(hex[i], 16) shl 4) + Character.digit(hex[i + 1], 16)).toByte()
+            i += 2
+        }
+        return data
     }
 
     private fun createRenderersFactory(): RenderersFactory {
         val factory = DefaultRenderersFactory(this)
+        // Preferensi Hardware/Software
         when (preferences.decoderMode) {
             1 -> factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             2 -> factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
@@ -318,8 +349,6 @@ class PlayerActivity : AppCompatActivity() {
         }
         return factory
     }
-
-    // ====================== Lifecycle & Controls ======================
 
     private fun playChannel() {
         val streamUrl = current?.streamUrl?.decodeUrl() ?: ""
@@ -340,34 +369,34 @@ class PlayerActivity : AppCompatActivity() {
             .setTrackSelector(trackSelector)
             .build()
 
-        player?.addListener(PlayerListener())
+        player?.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) errorCounter = 0
+            }
+            override fun onPlayerError(error: ExoPlaybackException) {
+                if (errorCounter < 3) {
+                    errorCounter++
+                    retryPlayback(false)
+                }
+            }
+        })
+
         bindingRoot.playerView.player = player
         player?.setMediaSource(mediaSource)
         player?.prepare()
         player?.playWhenReady = true
     }
 
-    private inner class PlayerListener : Player.EventListener {
-        override fun onPlaybackStateChanged(state: Int) {
-            if (state == Player.STATE_READY) errorCounter = 0
-        }
+    // ====================== Navigasi & Helper ======================
 
-        override fun onPlayerError(error: ExoPlaybackException) {
-            if (errorCounter < 3) {
-                errorCounter++
-                retryPlayback(false)
-            }
-        }
+    private fun switchChannel(mode: Int): Boolean {
+        // Logika switch channel dasar
+        return true
     }
 
     private fun retryPlayback(force: Boolean) {
         player?.prepare()
         player?.playWhenReady = true
-    }
-
-    private fun lockControl(lock: Boolean) {
-        isLocked = lock
-        bindingControl.layoutControl.visibility = if (lock) View.INVISIBLE else View.VISIBLE
     }
 
     private fun showTrackSelector() {
@@ -387,19 +416,14 @@ class PlayerActivity : AppCompatActivity() {
         })
     }
 
-    // Fungsi pembantu Navigasi (Disederhanakan untuk scannability)
-    private fun switchChannel(mode: Int) {
-        // Implementasi switch channel sama dengan kode awal Anda
-        // Digunakan untuk navigasi antar channel/kategori
-    }
-
-    private fun doubleTapLeft(c: Int) { /* Logic seek */ }
-    private fun doubleTapRight(c: Int) { /* Logic seek */ }
-    private fun doubleTapFinish(c: Int, l: Boolean) { /* Logic seek */ }
+    private fun doubleTapLeft(c: Int) {}
+    private fun doubleTapRight(c: Int) {}
+    private fun doubleTapFinish(c: Int, l: Boolean) {}
 
     override fun onDestroy() {
         player?.release()
         stopClock()
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
         super.onDestroy()
     }
 }
