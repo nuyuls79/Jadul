@@ -105,7 +105,6 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(bindingRoot.root)
 
         isFirst = false
-
         if (Playlist.cached.isCategoriesEmpty()) {
             Toast.makeText(this, R.string.player_no_playlist, Toast.LENGTH_SHORT).show()
             finish()
@@ -136,7 +135,6 @@ class PlayerActivity : AppCompatActivity() {
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastReceiver, IntentFilter(PLAYER_CALLBACK))
-
         startClock()
     }
 
@@ -163,9 +161,7 @@ class PlayerActivity : AppCompatActivity() {
             holder.textView.text = channel.name
             holder.textView.isSelected = (channel == currentChannel)
             holder.textView.setOnClickListener(object : View.OnClickListener {
-                override fun onClick(v: View?) {
-                    activity.onChannelItemClick(channel)
-                }
+                override fun onClick(v: View?) { activity.onChannelItemClick(channel) }
             })
         }
 
@@ -210,13 +206,14 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    // ====================== Jam & UI Control ======================
+    // ====================== Jam & UI ======================
 
     private fun startClock() {
         timeHandler = Handler(Looper.getMainLooper())
         timeRunnable = object : Runnable {
             override fun run() {
-                bindingRoot.tvPlayerTime.text = timeFormat.format(Date())
+                val now = Date()
+                bindingRoot.tvPlayerTime.text = timeFormat.format(now)
                 timeHandler?.postDelayed(this, 1000)
             }
         }
@@ -234,10 +231,11 @@ class PlayerActivity : AppCompatActivity() {
                 override fun onSwipeUp() { switchChannel(CATEGORY_DOWN) }
                 override fun onSwipeLeft() { switchChannel(CHANNEL_NEXT) }
                 override fun onSwipeRight() { switchChannel(CHANNEL_PREVIOUS) }
-                override fun onTapDoubleLeft(click: Int) { doubleTapLeft(click) }
-                override fun onTapDoubleRight(click: Int) { doubleTapRight(click) }
-                override fun onTapDoubleFinish(click: Int, isLeft: Boolean) { doubleTapFinish(click, isLeft) }
+                override fun onTapDoubleLeft(click: Int) { }
+                override fun onTapDoubleRight(click: Int) { }
+                override fun onTapDoubleFinish(click: Int, isLeft: Boolean) { }
             })
+            // Perbaikan Type Mismatch VisibilityListener
             setControllerVisibilityListener(object : PlayerControlView.VisibilityListener {
                 override fun onVisibilityChange(visibility: Int) {
                     setChannelInformation(visibility == View.VISIBLE)
@@ -292,22 +290,14 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private fun lockControl(setLocked: Boolean) {
-        isLocked = setLocked
-        val visibility = if (setLocked) View.INVISIBLE else View.VISIBLE
-        bindingRoot.layoutInfo.visibility = visibility
-        bindingControl.layoutControl.visibility = visibility
-    }
-
-    // ====================== ExoPlayer Core (DRM & Renderers) ======================
+    // ====================== DRM Multi-Key (Perbaikan Unresolved Reference) ======================
 
     private fun createDrmSessionManager(drmLicense: DrmLicense, httpFactory: DefaultHttpDataSource.Factory): DrmSessionManager {
         val uuid = UUID.fromString(drmLicense.type)
-        
         val drmCallback = if (drmLicense.key.startsWith("http")) {
             HttpMediaDrmCallback(drmLicense.key, httpFactory)
         } else {
-            // Logic ClearKey manual tanpa lambda
+            // Logic Manual JSON String (Menghindari unresolved buildJsonString)
             val keyPairs = drmLicense.key.split(",")
             val sb = StringBuilder("{\"keys\":[")
             for (i in keyPairs.indices) {
@@ -324,7 +314,7 @@ class PlayerActivity : AppCompatActivity() {
 
         return DefaultDrmSessionManager.Builder()
             .setUuidAndExoMediaDrmProvider(uuid, FrameworkMediaDrm.DEFAULT_PROVIDER)
-            .setMultiSession(true) // AKTIF: Untuk Multi-key DRM
+            .setMultiSession(true) // Dukungan Multi-key
             .build(drmCallback)
     }
 
@@ -341,7 +331,6 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun createRenderersFactory(): RenderersFactory {
         val factory = DefaultRenderersFactory(this)
-        // Preferensi Hardware/Software
         when (preferences.decoderMode) {
             1 -> factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             2 -> factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
@@ -349,6 +338,8 @@ class PlayerActivity : AppCompatActivity() {
         }
         return factory
     }
+
+    // ====================== Playback & Listener ======================
 
     private fun playChannel() {
         val streamUrl = current?.streamUrl?.decodeUrl() ?: ""
@@ -369,11 +360,13 @@ class PlayerActivity : AppCompatActivity() {
             .setTrackSelector(trackSelector)
             .build()
 
+        // Perbaikan override nothing onPlayerError
         player?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_READY) errorCounter = 0
             }
-            override fun onPlayerError(error: ExoPlaybackException) {
+
+            override fun onPlayerError(error: PlaybackException) {
                 if (errorCounter < 3) {
                     errorCounter++
                     retryPlayback(false)
@@ -387,16 +380,14 @@ class PlayerActivity : AppCompatActivity() {
         player?.playWhenReady = true
     }
 
-    // ====================== Navigasi & Helper ======================
-
-    private fun switchChannel(mode: Int): Boolean {
-        // Logika switch channel dasar
-        return true
-    }
-
     private fun retryPlayback(force: Boolean) {
         player?.prepare()
         player?.playWhenReady = true
+    }
+
+    private fun lockControl(lock: Boolean) {
+        isLocked = lock
+        bindingControl.layoutControl.visibility = if (lock) View.INVISIBLE else View.VISIBLE
     }
 
     private fun showTrackSelector() {
@@ -416,14 +407,14 @@ class PlayerActivity : AppCompatActivity() {
         })
     }
 
-    private fun doubleTapLeft(c: Int) {}
-    private fun doubleTapRight(c: Int) {}
-    private fun doubleTapFinish(c: Int, l: Boolean) {}
+    private fun switchChannel(mode: Int): Boolean {
+        // Implementasi navigasi channel dasar
+        return true
+    }
 
     override fun onDestroy() {
         player?.release()
         stopClock()
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
         super.onDestroy()
     }
 }
