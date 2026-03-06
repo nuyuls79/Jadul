@@ -22,24 +22,22 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
-
     private var isTelevision = UiMode().isTelevision()
     private val preferences = Preferences()
     private val helper = PlaylistHelper()
-
     private lateinit var binding: ActivityMainBinding
     private lateinit var categoryAdapter: CategoryAdapter
-
     private var currentCategoryPosition = 0
     private var currentCategory: Category? = null
     private var isDataLoaded = false
 
+    // Jam real-time
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
     private var handler: Handler? = null
     private var runnable: Runnable? = null
 
+    // Pemilihan sumber
     private var currentSourceIndex = 0
     private var sourceList: ArrayList<Source> = arrayListOf()
 
@@ -62,36 +60,36 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Ambil daftar sumber dari Preferences
         sourceList = preferences.sources ?: arrayListOf()
-
         if (sourceList.isEmpty()) {
             Toast.makeText(this, "Tidak ada sumber playlist", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
+        // Tentukan indeks aktif
         currentSourceIndex = sourceList.indexOfFirst { it.active }
-
         if (currentSourceIndex < 0) {
             currentSourceIndex = 0
             sourceList[currentSourceIndex].active = true
             preferences.sources = sourceList
         }
 
+        // Setup tombol pemilih sumber
         setupSourceSelector()
 
+        // Tombol lainnya
         binding.buttonSearch.setOnClickListener { openSearch() }
         binding.buttonRefresh.setOnClickListener { updatePlaylist(false) }
         binding.buttonSettings.setOnClickListener { openSettings() }
         binding.buttonExit.setOnClickListener { finish() }
 
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver, IntentFilter(MAIN_CALLBACK))
 
         if (savedInstanceState != null) {
             currentCategoryPosition = savedInstanceState.getInt("current_position", 0)
@@ -99,18 +97,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupAdapter()
-
         startClock()
 
+        // Muat playlist dari sumber aktif
         loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
     override fun onResume() {
         super.onResume()
         startClock()
-
+        // Sinkronisasi sumber (misal ada perubahan dari dialog)
         val newList = preferences.sources ?: arrayListOf()
-
         if (newList != sourceList) {
             sourceList = newList
             currentSourceIndex = sourceList.indexOfFirst { it.active }
@@ -136,92 +133,81 @@ class MainActivity : AppCompatActivity() {
         outState.putInt("current_source_index", currentSourceIndex)
     }
 
+    private fun startClock() {
+        handler = Handler(Looper.getMainLooper())
+        runnable = object : Runnable {
+            override fun run() {
+                updateTime()
+                handler?.postDelayed(this, 1000)
+            }
+        }
+        handler?.post(runnable!!)
+    }
+
+    private fun stopClock() {
+        handler?.removeCallbacks(runnable!!)
+        handler = null
+        runnable = null
+    }
+
+    private fun updateTime() {
+        val now = Date()
+        val timeStr = timeFormat.format(now)
+        val dateStr = dateFormat.format(now)
+        binding.tvHeaderTime.text = "$timeStr WIB $dateStr"
+    }
+
     private fun setupAdapter() {
-
         categoryAdapter = CategoryAdapter(arrayListOf())
-
         categoryAdapter.setOnCategoryClickListener { position ->
             onCategoryClicked(position)
         }
-
-        binding.rvCategory.layoutManager =
-            LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-
+        binding.rvCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.rvCategory.adapter = categoryAdapter
-
-        // FIX RecyclerView glitch Android TV
-        binding.rvCategory.setHasFixedSize(true)
-        binding.rvCategory.itemAnimator = null
-        binding.rvCategory.setItemViewCacheSize(20)
-
         binding.setCatAdapter(categoryAdapter)
     }
 
     fun onCategoryClicked(position: Int) {
-
         val category = Playlist.cached.categories?.getOrNull(position)
-
         if (category != null && currentCategoryPosition != position) {
-
             currentCategoryPosition = position
             currentCategory = category
-
             displayChannels(category, position)
         }
     }
 
     private fun displayChannels(category: Category?, position: Int) {
-
         currentCategoryPosition = position
         currentCategory = category
 
         val channels = category?.channels
-
         val spanCount = if (isTelevision) 8 else 4
-
         binding.rvChannels.layoutManager = GridLayoutManager(this, spanCount)
 
         val channelAdapter = ChannelAdapter(channels, position, false)
-
         binding.rvChannels.adapter = channelAdapter
     }
 
     private fun setPlaylistToAdapter(playlistSet: Playlist) {
-
         val fav = helper.readFavorites().trimNotExistFrom(playlistSet)
-
-        if (fav?.channels?.isNotEmpty() == true)
-            playlistSet.insertFavorite(fav.channels)
+        if (fav?.channels?.isNotEmpty() == true) playlistSet.insertFavorite(fav.channels)
 
         val categories = playlistSet.categories ?: arrayListOf()
 
         categoryAdapter.updateData(categories)
 
         if (categories.isNotEmpty()) {
-
-            if (currentCategoryPosition >= categories.size)
+            if (currentCategoryPosition >= categories.size) {
                 currentCategoryPosition = 0
-
+            }
             categoryAdapter.setSelectedPosition(currentCategoryPosition)
 
-            val targetPosition =
-                if (currentCategoryPosition < categories.size)
-                    currentCategoryPosition
-                else 0
-
+            val targetPosition = if (currentCategoryPosition < categories.size)
+                currentCategoryPosition else 0
             currentCategory = categories[targetPosition]
-
             displayChannels(currentCategory, targetPosition)
-
-            // Scroll stabil
-            binding.rvCategory.post {
-                binding.rvCategory.scrollToPosition(currentCategoryPosition)
-            }
-
         } else {
-
             binding.rvChannels.adapter = null
-
             Toast.makeText(this, "Tidak ada kategori", Toast.LENGTH_SHORT).show()
         }
 
@@ -231,160 +217,95 @@ class MainActivity : AppCompatActivity() {
         binding.loading.visibility = View.GONE
         binding.rvCategory.visibility = View.VISIBLE
         binding.rvChannels.visibility = View.VISIBLE
-    }
 
-    // ================= CLOCK =================
-
-    private fun startClock() {
-
-        handler = Handler(Looper.getMainLooper())
-
-        runnable = object : Runnable {
-            override fun run() {
-
-                updateTime()
-
-                handler?.postDelayed(this, 1000)
-            }
+        binding.rvCategory.post {
+            categoryAdapter.notifyDataSetChanged()
+            binding.rvCategory.scrollToPosition(currentCategoryPosition)
+            binding.rvCategory.requestLayout()
+            // Trik untuk memaksa layout
+            binding.rvCategory.visibility = View.INVISIBLE
+            binding.rvCategory.visibility = View.VISIBLE
         }
-
-        handler?.post(runnable!!)
     }
 
-    private fun stopClock() {
-
-        handler?.removeCallbacks(runnable!!)
-        handler = null
-        runnable = null
-    }
-
-    private fun updateTime() {
-
-        val now = Date()
-
-        val timeStr = timeFormat.format(now)
-        val dateStr = dateFormat.format(now)
-
-        binding.tvHeaderTime.text = "$timeStr WIB $dateStr"
-    }
-
-    // ================= SOURCE SELECTOR =================
+    // ====================== Bagian Pemilih Sumber ======================
 
     private fun setupSourceSelector() {
-
         updateSourceDisplay()
-
         binding.tvSourceSelector.setOnClickListener {
             showSourceMenu()
         }
     }
 
     private fun updateSourceDisplay() {
-
         val source = sourceList.getOrNull(currentSourceIndex)
-
         binding.tvSourceSelector.text = getSourceDisplayName(source?.path ?: "")
     }
 
     private fun getSourceDisplayName(path: String): String {
-
         return when (path) {
-
             Preferences.DEFAULT_PLAYLIST_URL_1 -> "Live TV 1"
-
             Preferences.DEFAULT_PLAYLIST_URL_2 -> "Live TV 2"
-
             else -> "Sumber ${path.take(15)}..."
         }
     }
 
     private fun showSourceMenu() {
-
         val popup = PopupMenu(this, binding.tvSourceSelector)
-
         sourceList.forEachIndexed { index, source ->
-
             val title = getSourceDisplayName(source.path ?: "")
-
             popup.menu.add(0, index, index, title)
         }
-
         popup.setOnMenuItemClickListener { item ->
-
             val index = item.itemId
-
             if (index != currentSourceIndex) {
-
+                // Update status aktif
                 sourceList.forEachIndexed { i, src ->
                     src.active = (i == index)
                 }
-
                 preferences.sources = sourceList
-
                 currentSourceIndex = index
-
                 updateSourceDisplay()
-
                 loadPlaylistFromSource(sourceList[index])
             }
-
             true
         }
-
         popup.show()
     }
 
     private fun loadPlaylistFromSource(source: Source) {
-
         binding.loading.visibility = View.VISIBLE
         binding.rvCategory.visibility = View.GONE
         binding.rvChannels.visibility = View.GONE
 
         val playlistSet = Playlist()
-
         val singleSourceList = arrayListOf(source)
 
         SourcesReader().set(singleSourceList, object: SourcesReader.Result {
-
             override fun onError(source: String, error: String) {
-
                 runOnUiThread {
-
                     binding.loading.visibility = View.GONE
-
                     Toast.makeText(this@MainActivity, "Error: $error", Toast.LENGTH_SHORT).show()
-
                     if (!Playlist.cached.isCategoriesEmpty()) {
-
                         setPlaylistToAdapter(Playlist.cached)
                     }
                 }
             }
-
             override fun onResponse(playlist: Playlist?) {
-
                 playlist?.let { playlistSet.mergeWith(it) }
             }
-
             override fun onFinish() {
-
                 runOnUiThread {
-
                     setPlaylistToAdapter(playlistSet)
                 }
             }
-
         }).process(true)
     }
 
     private fun updatePlaylist(useCache: Boolean) {
-
         loadPlaylistFromSource(sourceList[currentSourceIndex])
     }
 
-    private fun openSettings() =
-        SettingDialog().show(supportFragmentManager.beginTransaction(), null)
-
-    private fun openSearch() =
-        SearchDialog().show(supportFragmentManager.beginTransaction(), null)
+    private fun openSettings() = SettingDialog().show(supportFragmentManager.beginTransaction(), null)
+    private fun openSearch() = SearchDialog().show(supportFragmentManager.beginTransaction(), null)
 }
