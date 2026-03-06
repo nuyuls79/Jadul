@@ -1,74 +1,91 @@
 package net.harimurti.tv.adapter
 
+import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import net.harimurti.tv.R
+import net.harimurti.tv.databinding.ItemCategoryBinding
 import net.harimurti.tv.model.Category
 
-class CategoryAdapter(
-    private val categories: ArrayList<Category> = ArrayList()
-) : RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
+class CategoryAdapter(private val categories: ArrayList<Category>?) :
+    RecyclerView.Adapter<CategoryAdapter.ViewHolder>() {
 
-    private var selectedPosition = 0
-    private var listener: ((Int) -> Unit)? = null
+    private lateinit var context: Context
+    private var selectedPos = 0
+    private var onCategoryClickListener: ((Int) -> Unit)? = null
 
-    fun setOnCategoryClickListener(listener: (Int) -> Unit) {
-        this.listener = listener
-    }
-
-    fun updateData(newCategories: List<Category>) {
-        categories.clear()
-        categories.addAll(newCategories)
-        notifyDataSetChanged()
-    }
-
-    fun setSelectedPosition(position: Int) {
-        val oldPosition = selectedPosition
-        selectedPosition = position
-        notifyItemChanged(oldPosition)
-        notifyItemChanged(selectedPosition)
-    }
+    class ViewHolder(val binding: ItemCategoryBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_category, parent, false)
-        return ViewHolder(view)
-    }
-
-    override fun getItemCount(): Int {
-        return categories.size
+        context = parent.context
+        val binding: ItemCategoryBinding = DataBindingUtil.inflate(
+            LayoutInflater.from(context), R.layout.item_category, parent, false
+        )
+        return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val dataObj = categories?.get(position) ?: return
 
-        val category = categories[position]
+        holder.binding.textCategory.apply {
+            text = dataObj.name ?: ""
 
-        holder.txtCategory.text = category.name
+            // Marquee untuk semua item
+            isSelected = true
 
-        holder.itemView.isSelected = position == selectedPosition
+            // Background dan warna berdasarkan posisi terpilih
+            if (selectedPos == position) {
+                setBackgroundResource(R.drawable.bg_category_highlight)
+                setTextColor(Color.WHITE)
+                setTypeface(null, Typeface.BOLD)
+            } else {
+                setBackgroundResource(R.drawable.bg_category_default)
+                setTextColor(Color.LTGRAY)
+                setTypeface(null, Typeface.NORMAL)
+            }
+        }
 
         holder.itemView.setOnClickListener {
-
-            val oldPosition = selectedPosition
-            selectedPosition = holder.adapterPosition
-
-            notifyItemChanged(oldPosition)
-            notifyItemChanged(selectedPosition)
-
-            listener?.invoke(selectedPosition)
+            if (selectedPos != holder.adapterPosition) {
+                val oldPos = selectedPos
+                selectedPos = holder.adapterPosition
+                notifyItemChanged(oldPos)
+                notifyItemChanged(selectedPos)
+                onCategoryClickListener?.invoke(selectedPos)
+            }
         }
     }
 
-    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    override fun getItemCount(): Int = categories?.size ?: 0
 
-        val txtCategory: TextView = itemView.findViewById(R.id.txtCategory)
+    fun setOnCategoryClickListener(listener: (Int) -> Unit) {
+        this.onCategoryClickListener = listener
+    }
 
-        init {
-            itemView.isFocusable = true
-            itemView.isFocusableInTouchMode = true
+    fun setSelectedPosition(position: Int) {
+        if (position != selectedPos && position < itemCount) {
+            val oldPos = selectedPos
+            selectedPos = position
+            notifyItemChanged(oldPos)
+            notifyItemChanged(selectedPos)
         }
+    }
+
+    fun updateData(newCategories: ArrayList<Category>?) {
+        categories?.clear()
+        newCategories?.let { categories?.addAll(it) }
+        notifyDataSetChanged()
+    }
+
+    fun insertOrUpdateFavorite() {
+        notifyDataSetChanged()
+    }
+
+    fun removeFavorite() {
+        notifyDataSetChanged()
     }
 }
